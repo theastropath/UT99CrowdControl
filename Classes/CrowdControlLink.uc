@@ -24,6 +24,9 @@ const ArrayDoneState = 4;
 
 const ReconDefault = 5;
 
+var int behindTimer;
+const BehindTimerDefault = 15;
+
 struct JsonElement
 {
     var string key;
@@ -267,20 +270,203 @@ function Timer() {
     ticker++;
     if (IsConnected()) {
         ManualReceiveBinary();
-    } else {
-        ccModule.BroadcastMessage("Not connected! "$ticker);
+    }
+    
+    if (ticker%10 != 0) {
+        return;
     }
 
+    if (!IsConnected()) {
+        reconnectTimer-=1;
+        if (reconnectTimer <= 0){
+            Resolve(crowd_control_addr);
+        }
+    }
+
+    if (behindTimer > 0) {
+        ccModule.BroadCastMessage("Behind timer is now at "$behindTimer);
+        behindTimer--;
+        if (behindTimer <= 0) {
+            SetAllPlayersBehindView(False);
+        }
+    }    
+
 }
+
+function RemoveAllArmor(Pawn p)
+{
+    // If there is armor in our inventory chain, unlink it and destroy it
+	local actor Link;
+    local Inventory armor;
+	local bool ItemExisted;
+
+
+	for( Link = p; Link!=None; Link=Link.Inventory )
+	{
+		if( Link.Inventory.bIsAnArmor )
+		{
+            armor = Link.Inventory;
+			Link.Inventory = Link.Inventory.Inventory;
+            armor.SetOwner(None);
+            armor.Destroy();
+		}
+	}
+}
+
+function int SuddenDeath(string viewer)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        p.Health = 1;
+        RemoveAllArmor(p);
+    }
+    
+    ccModule.BroadCastMessage(viewer$" has initiated sudden death!  All health reduced to 1, no armour!");
+    
+    return Success;
+}
+
+function int FullHeal(string viewer)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        //Don't reduce health if someone is overhealed
+        if (p.Health < 100) {
+            p.Health = 100;
+        }
+    }
+    
+    ccModule.BroadCastMessage("Everyone has been fully healed by "$viewer$"!");
+    
+    return Success;
+
+}
+
+//This is a bit more complicated than anticipated, due to armor being carried in inventory
+function int FullArmour(string viewer)
+{
+    //TBD
+    ccModule.BroadCastMessage("Everyone has been brought to 100 armor by "$viewer$"!");
+    
+    return Success;
+}
+
+//This is a bit more complicated than anticipated, due to armor being carried in inventory
+function int GiveArmour(string viewer,int amount)
+{
+    //TBD
+    ccModule.BroadCastMessage("Everyone has been given "$amount$" armor by "$viewer$"!");
+    
+    return Success;
+}
+function int GiveHealth(string viewer,int amount)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        p.Health = Min(p.Health + amount,199); //Let's allow this to overheal, up to 199
+    }
+    
+    ccModule.BroadCastMessage("Everyone has been given "$amount$" health by "$viewer$"!");
+    
+    return Success;
+}
+
+function int DisableJump(String viewer)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        //TBD
+    }
+    
+    ccModule.BroadCastMessage(viewer$" says NO JUMPING!");
+    
+    return Success;
+}
+
+function SetAllPlayersBehindView(bool val)
+{
+    local PlayerPawn p;
+    
+    foreach AllActors(class'PlayerPawn',p) {
+        p.BehindView(val);
+    }
+}
+
+function int ThirdPerson(String viewer)
+{
+    SetAllPlayersBehindView(True);
+    behindTimer = BehindTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" wants you to have an out of body experience!");
+    
+    return Success;
+
+}
+
+function int GiveDamageItem(String viewer)
+{
+    local Pawn p;
+    local UDamage dam;
+    
+    foreach AllActors(class'Pawn',p) {
+        dam = Spawn(class'UDamage');
+        if (p.AddInventory(dam) == False){
+            //Despawn it again if we failed to put it in inventory
+            //For some reason we can't add it to Bot inventory?
+            dam.Destroy();
+            //ccModule.BroadCastMessage("Couldn't give damage to pawn");
+            continue;
+        }
+        dam.Activate();
+        //ccModule.BroadCastMessage("Gave damage to pawn");
+    }
+    
+    ccModule.BroadCastMessage(viewer$" gave everyone a damage powerup!");
+    
+    return Success;
+}
+
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
-    //switch(code) {
-    //    
-    //}
+    switch(code) {
+        case "sudden_death":
+            return SuddenDeath(viewer);
+        case "full_heal":
+            return FullHeal(viewer);
+        case "full_armour":
+            return FullArmour(viewer);
+        case "give_health":
+            return GiveHealth(viewer,Int(param[0]));
+        case "give_armour":
+            return GiveArmour(viewer,Int(param[0]));
+        case "disable_jump":
+            return DisableJump(viewer);
+        case "third_person":
+            return ThirdPerson(viewer);
+        case "double_dmg":
+            return GiveDamageItem(viewer);
+        case "gotta_go_fast":
+        case "gotta_go_slow":
+        case "ice_physics":
+        case "nudge":
+        case "swap_player_position":
+        case "low_grav":
+        case "no_ammo":
+        case "drop_selected_item":
+        //case "give_weaponXYZ"
+        //case "give_ammoXYZ"
+        default:
+            ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
+            break;
+        
+    }
     
-    ccModule.BroadCastMessage("Got Crowd Control event - code: "$code$" viewer: "$viewer );
     
     
     return Success;

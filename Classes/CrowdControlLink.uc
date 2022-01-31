@@ -273,6 +273,124 @@ function Timer() {
 
 }
 
+function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
+    local int i;
+
+    //switch(code) {
+    //    
+    //}
+    
+    ccModule.BroadCastMessage("Got Crowd Control event - code: "$code$" viewer: "$viewer );
+    
+    
+    return Success;
+}
+
+function handleMessage( string msg) {
+  
+    local int id,type;
+    local string code,viewer;
+    local string param[5];
+    
+    local int result;
+    
+    local JsonMsg jmsg;
+    local string val;
+    local int i,j;
+
+    if (isCrowdControl(msg)) {
+        jmsg=ParseJson(msg);
+        
+        for (i=0;i<jmsg.count;i++) {
+            if (jmsg.e[i].valCount>0) {
+                val = jmsg.e[i].value[0];
+                //PlayerMessage("Key: "$jmsg.e[i].key);
+                switch (jmsg.e[i].key) {
+                    case "code":
+                        code = val;
+                        break;
+                    case "viewer":
+                        viewer = val;
+                        break;
+                    case "id":
+                        id = Int(val);
+                        break;
+                    case "type":
+                        type = Int(val);
+                        break;
+                    case "parameters":
+                        for (j=0;j<5;j++) {
+                            param[j] = jmsg.e[i].value[j];
+                        }
+                        break;
+                }
+            }
+        }
+        
+        result = doCrowdControlEvent(code,param,viewer,type);
+        
+        sendReply(id,result);
+        
+    } else {
+        ccModule.BroadCastMessage("Got a weird message: "$msg);
+    }
+
+}
+
+function bool isCrowdControl( string msg) {
+    local string tmp;
+    //Validate if it looks json-like
+    if (InStr(msg,"{")!=0){
+        //PlayerMessage("Message doesn't start with curly");
+        return False;
+    }
+    
+    //Explicitly check last character of string to see if it's a closing curly
+    tmp = Mid(msg,Len(msg)-1,1);
+    //if (InStr(msg,"}")!=Len(msg)-1){
+    if (tmp != "}"){
+        //PlayerMessage("Message doesn't end with curly.  Ends with '"$tmp$"'.");
+        return False;    
+    }
+    
+    //Check to see if it looks like it has the right fields in it
+    
+    //id field
+    if (InStr(msg,"id")==-1){
+        //PlayerMessage("Doesn't have id");
+        return False;
+    }
+    
+    //code field
+    if (InStr(msg,"code")==-1){
+        //PlayerMessage("Doesn't have code");
+        return False;
+    }
+    //viewer field
+    if (InStr(msg,"viewer")==-1){
+        //PlayerMessage("Doesn't have viewer");
+        return False;
+    }
+
+    return True;
+}
+
+function sendReply(int id, int status) {
+    local string resp;
+    local byte respbyte[255];
+    local int i;
+    
+    resp = "{\"id\":"$id$",\"status\":"$status$"}"; 
+    
+    for (i=0;i<Len(resp);i++){
+        respbyte[i]=Asc(Mid(resp,i,1));
+    }
+    
+    //PlayerMessage(resp);
+    SendBinary(Len(resp)+1,respbyte);
+}
+
+
 //I cannot believe I had to manually write my own version of ReceivedBinary
 function ManualReceiveBinary() {
     local byte B[255]; //I have to use a 255 length array even if I only want to read 1
@@ -284,8 +402,7 @@ function ManualReceiveBinary() {
         for (i = 0; i < count; i++) {
             if (B[i] == 0) {
                 if (Len(pendingMsg)>0){
-                    //handleMessage(pendingMsg);
-                    ccModule.BroadCastMessage(pendingMsg);
+                    handleMessage(pendingMsg);
                 }
                 pendingMsg="";
             } else {

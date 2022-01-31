@@ -27,6 +27,13 @@ const ReconDefault = 5;
 var int behindTimer;
 const BehindTimerDefault = 15;
 
+var int fatnessTimer;
+const FatnessTimerDefault = 60;
+
+var int speedTimer;
+const SpeedTimerDefault = 60;
+const SlowTimerDefault = 15;
+
 struct JsonElement
 {
     var string key;
@@ -284,12 +291,26 @@ function Timer() {
     }
 
     if (behindTimer > 0) {
-        ccModule.BroadCastMessage("Behind timer is now at "$behindTimer);
         behindTimer--;
         if (behindTimer <= 0) {
             SetAllPlayersBehindView(False);
         }
+    }
+
+    if (fatnessTimer > 0) {
+        fatnessTimer--;
+        if (fatnessTimer <= 0) {
+            SetAllPlayersFatness(120);
+        }
     }    
+
+    if (speedTimer > 0) {
+        speedTimer--;
+        if (speedTimer <= 0) {
+            SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed);
+        }
+    }  
+    
 
 }
 
@@ -411,18 +432,15 @@ function int GiveDamageItem(String viewer)
 {
     local Pawn p;
     local UDamage dam;
+    local inventory inv;
     
     foreach AllActors(class'Pawn',p) {
         dam = Spawn(class'UDamage');
-        if (p.AddInventory(dam) == False){
-            //Despawn it again if we failed to put it in inventory
-            //For some reason we can't add it to Bot inventory?
-            dam.Destroy();
-            //ccModule.BroadCastMessage("Couldn't give damage to pawn");
-            continue;
-        }
+        
+        dam.SetOwner(p);
+        dam.Inventory = p.Inventory;
+        p.Inventory = dam;
         dam.Activate();
-        //ccModule.BroadCastMessage("Gave damage to pawn");
     }
     
     ccModule.BroadCastMessage(viewer$" gave everyone a damage powerup!");
@@ -430,6 +448,113 @@ function int GiveDamageItem(String viewer)
     return Success;
 }
 
+function SetAllPlayersFatness(int fatness)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        p.Fatness = fatness;
+    }
+}
+
+function int FullFat(String viewer)
+{
+    if (fatnessTimer>0) {
+        return TempFail;
+    }
+  
+    SetAllPlayersFatness(255);
+      
+    fatnessTimer = FatnessTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" fattened everybody up!");
+    
+    return Success;
+}
+
+function int SkinAndBones(String viewer)
+{
+    if (fatnessTimer>0) {
+        return TempFail;
+    }
+
+    SetAllPlayersFatness(1);
+
+    fatnessTimer = FatnessTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" made everyone really skinny!");
+    
+    return Success;
+}
+
+function SetAllPlayersGroundSpeed(int speed)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        //ccModule.BroadCastMessage("Speed before: "$p.GroundSpeed$"  Speed After: "$speed);
+        p.GroundSpeed = speed;
+    }
+}
+
+function int GottaGoFast(String viewer)
+{
+    if (speedTimer>0) {
+        return TempFail;
+    }
+
+    SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed * 3);
+
+    speedTimer = SpeedTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" made everyone fast like Sonic!");
+    
+    return Success;   
+}
+
+function int GottaGoSlow(String viewer)
+{
+    if (speedTimer>0) {
+        return TempFail;
+    }
+
+    SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed / 3);
+
+    speedTimer = SlowTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" made everyone slow like a snail!");
+    
+    return Success;   
+}
+
+function int ThanosSnap(String viewer)
+{
+    local Pawn p;
+    local String origDamageString;
+    
+    origDamageString = Level.Game.SpecialDamageString;
+    Level.Game.SpecialDamageString = "%o got snapped by "$viewer;
+    
+    foreach AllActors(class'Pawn',p) {
+        if (Rand(2)==0){ //50% chance of death
+            P.TakeDamage
+            (
+                10000,
+                P,
+                P.Location,
+                Vect(0,0,0),
+                'SpecialDamage'				
+            );
+        }
+    }
+    
+    Level.Game.SpecialDamageString = origDamageString;
+    
+    ccModule.BroadCastMessage(viewer$" snapped their fingers!");
+    
+    return Success;
+
+}
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
@@ -440,19 +565,27 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "full_heal":
             return FullHeal(viewer);
         case "full_armour":
-            return FullArmour(viewer);
+            return FullArmour(viewer); //Not actually implemented
         case "give_health":
             return GiveHealth(viewer,Int(param[0]));
         case "give_armour":
-            return GiveArmour(viewer,Int(param[0]));
+            return GiveArmour(viewer,Int(param[0])); //Not actually implemented
         case "disable_jump":
-            return DisableJump(viewer);
+            return DisableJump(viewer); //Not actually implemented
         case "third_person":
             return ThirdPerson(viewer);
         case "double_dmg":
             return GiveDamageItem(viewer);
+        case "full_fat":
+            return FullFat(viewer);
+        case "skin_and_bones":
+            return SkinAndBones(viewer);
         case "gotta_go_fast":
+            return GottaGoFast(viewer);
         case "gotta_go_slow":
+            return GottaGoSlow(viewer);
+        case "thanos":
+            return ThanosSnap(viewer);
         case "ice_physics":
         case "nudge":
         case "swap_player_position":

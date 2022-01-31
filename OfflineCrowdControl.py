@@ -45,7 +45,11 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("double_dmg",None)  #For testing a specific effect
+    #return ("thanos",None)  #For testing a specific effect
+    
+    #effects.append(("gotta_go_slow",None));
+    #return random.choice(effects)            #For testing a small selection of effects
+
     
     #effects.append(None)
     #effects.append(None)
@@ -116,4 +120,4 @@ while True:
                 except:
                     break
                 print("Sent")
-            time.sleep(random.randint(5,15))
+            time.sleep(random.randint(30,60))

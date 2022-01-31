@@ -556,6 +556,192 @@ function int ThanosSnap(String viewer)
 
 }
 
+function Swap(Actor a, Actor b)
+{
+    local vector newloc, oldloc;
+    local rotator newrot;
+    local bool asuccess, bsuccess;
+    local Actor abase, bbase;
+    local bool AbCollideActors, AbBlockActors, AbBlockPlayers;
+    local EPhysics aphysics, bphysics;
+
+    if( a == b ) return;
+    
+    AbCollideActors = a.bCollideActors;
+    AbBlockActors = a.bBlockActors;
+    AbBlockPlayers = a.bBlockPlayers;
+    a.SetCollision(false, false, false);
+
+    oldloc = a.Location;
+    newloc = b.Location;
+    
+    b.SetLocation(oldloc);
+    a.SetCollision(AbCollideActors, AbBlockActors, AbBlockPlayers);
+    
+    a.SetLocation(newLoc);
+    
+    newrot = b.Rotation;
+    b.SetRotation(a.Rotation);
+    a.SetRotation(newrot);
+
+    aphysics = a.Physics;
+    bphysics = b.Physics;
+    abase = a.Base;
+    bbase = b.Base;
+
+    a.SetPhysics(bphysics);
+    if(abase != bbase) a.SetBase(bbase);
+    b.SetPhysics(aphysics);
+    if(abase != bbase) b.SetBase(abase);
+}
+
+function Pawn findRandomPawn()
+{
+    local int num;
+    local Pawn p;
+    local Pawn pawns[50];
+    
+    num = 0;
+    
+    foreach AllActors(class'Pawn',p) {
+        pawns[num++] = p;
+    }
+
+    if( num == 0 ) return None;
+    return pawns[ Rand(num) ];    
+}
+
+function int swapPlayer(string viewer) {
+    local Pawn a,b;
+    a = None;
+    b = None;
+    
+    while (a == None || b == None || a==b) {
+        a = findRandomPawn();
+        b = findRandomPawn();
+    }
+    
+    Swap(a,b);
+    
+    
+    //If we swapped a bot, get them to recalculate their logic so they don't just run off a cliff
+    if (a.PlayerReplicationInfo.bIsABot == True && Bot(a)!=None) {
+        Bot(a).WhatToDoNext('','');
+    }
+    if (b.PlayerReplicationInfo.bIsABot == True && Bot(b)!=None) {
+        Bot(b).WhatToDoNext('','');
+    }
+    
+    ccModule.BroadCastMessage(viewer@"thought "$a.PlayerReplicationInfo.PlayerName$" would look better if they were where"@b.PlayerReplicationInfo.PlayerName@"was");
+    
+    return Success;
+}
+
+function RemoveAllAmmoFromPawn(Pawn p)
+{
+	local Inventory Inv;
+    ccModule.BroadCastMessage("Removing ammo from "$p.PlayerReplicationInfo.PlayerName);
+	for( Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory ) {
+		if ( Ammo(Inv) != None ) {
+			Ammo(Inv).AmmoAmount = 0;
+            ccModule.BroadCastMessage("Removing "$Inv.Name$" from "$p.PlayerReplicationInfo.PlayerName);
+
+        }   
+    }      
+}
+
+function int NoAmmo(String viewer)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        RemoveAllAmmoFromPawn(p);
+    }
+    
+    ccModule.BroadCastMessage(viewer$" stole all your ammo!");
+    
+    return Success;
+}
+
+function class<Actor> GetAmmoClassByName(String ammoName)
+{
+    local class<Actor> ammoClass;
+    
+    switch(ammoName){
+        case "FlakAmmo":
+            ammoClass = class'FlakAmmo';
+            break;
+        case "BioAmmo":
+            ammoClass = class'BioAmmo';
+            break;
+        case "WarHeadAmmo":
+            ammoClass = class'WarHeadAmmo';
+            break;
+        case "PAmmo":
+            ammoClass = class'PAmmo';
+            break;
+        case "ShockCore":
+            ammoClass = class'ShockCore';
+            break;
+        case "BladeHopper":
+            ammoClass = class'BladeHopper';
+            break;
+        case "RocketPack":
+            ammoClass = class'RocketPack';
+            break;
+        case "BulletBox":
+            ammoClass = class'BulletBox';
+            break;
+        case "MiniAmmo":
+            ammoClass = class'MiniAmmo';
+            break;
+        default:
+            break;
+    }
+    
+    return ammoClass;
+}
+
+function AddItemToPawnInventory(Pawn p, Inventory item)
+{
+        item.SetOwner(p);
+        item.Inventory = p.Inventory;
+        p.Inventory = item;
+}
+
+function int GiveAmmo(String viewer, String ammoName, int amount)
+{
+    local class<Actor> ammoClass;
+    local Pawn p;
+    local Inventory inv;
+    local Ammo amm;
+    local Actor a;
+    
+    ammoClass = GetAmmoClassByName(ammoName);
+    
+    foreach AllActors(class'Pawn',p) {
+        inv = p.FindInventoryType(ammoClass);
+        
+        if (inv == None) {
+            a = Spawn(ammoClass);
+            amm = Ammo(a);
+            AddItemToPawnInventory(p,amm);
+            
+            if (amount > 1) {
+                amm.AddAmmo((amount-1)*amm.Default.AmmoAmount);    
+            }
+            
+        } else {
+            amm = Ammo(inv);
+            amm.AddAmmo(amount*amm.Default.AmmoAmount);  //Add the equivalent of picking up that many boxes
+        }
+    }
+    
+    ccModule.BroadCastMessage(viewer$" gave everybody some ammo! ("$ammoName$")");
+
+    
+}
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -586,14 +772,17 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return GottaGoSlow(viewer);
         case "thanos":
             return ThanosSnap(viewer);
+        case "swap_player_position":
+            return swapPlayer(viewer);
+        case "no_ammo":
+            return NoAmmo(viewer);
+        case "give_ammo":
+            return giveAmmo(viewer,param[0],Int(param[1]));
         case "ice_physics":
         case "nudge":
-        case "swap_player_position":
         case "low_grav":
-        case "no_ammo":
         case "drop_selected_item":
         //case "give_weaponXYZ"
-        //case "give_ammoXYZ"
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

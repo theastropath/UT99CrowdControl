@@ -27,9 +27,15 @@ def genMsg(code,param):
 
 def randomAmmo():
     ammo = []
-    ammo.append('Ammo10mm')
-    ammo.append('Ammo20mm')
-    ammo.append('Ammo762mm')
+    ammo.append('FlakAmmo') #Flak Cannon
+    ammo.append('BioAmmo')  #Bio Rifle
+    ammo.append('WarHeadAmmo')  #Redeemer
+    ammo.append('PAmmo') #Pulse Gun
+    ammo.append('ShockCore') #Shock Rifle
+    ammo.append('BladeHopper') #Ripper
+    ammo.append('RocketPack') #Rocket 
+    ammo.append('BulletBox') #Sniper
+    ammo.append('MiniAmmo')   #Enforcer and minigun both use these???
 
     return random.choice(ammo).lower()
 
@@ -45,7 +51,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("thanos",None)  #For testing a specific effect
+    #return ("give_ammo",[randomAmmo(),random.randint(1,2)])  #For testing a specific effect
     
     #effects.append(("gotta_go_slow",None));
     #return random.choice(effects)            #For testing a small selection of effects
@@ -77,25 +83,30 @@ def pickEffect():
 
     #effects.append(("disable_jump",None))
 
-    #effects.append(("gotta_go_fast",None))
+    effects.append(("gotta_go_fast",None))
 
-    #effects.append(("gotta_go_slow",None))
+    effects.append(("gotta_go_slow",None))
 
     #effects.append(("ice_physics",None))
 
     effects.append(("third_person",None))
 
-    #effects.append(("double_dmg",None))
+    effects.append(("double_dmg",None))
+    
+    effects.append(("thanos",None))
+    effects.append(("full_fat",None))
+    effects.append(("skin_and_bones",None))
+    effects.append(("no_ammo",None))
 
     #effects.append(("give_"+randomWeapon(),None))
 
     #effects.append(("nudge",None))
 
-    #effects.append(("swap_player_position",None))
+    effects.append(("swap_player_position",None))
 
     #effects.append(("low_grav",None))
     
-    #effects.append(("give_"+randomAmmo(),[random.randint(1,2)]))
+    effects.append(("give_ammo",[randomAmmo(),random.randint(1,2)]))
 
 
     return random.choice(effects)
@@ -120,4 +131,4 @@ while True:
                 except:
                     break
                 print("Sent")
-            time.sleep(random.randint(30,60))
+            time.sleep(random.randint(5,15))

@@ -22,6 +22,26 @@ const ValState = 2;
 const ArrayState = 3;
 const ArrayDoneState = 4;
 
+struct ZoneFriction
+{
+    var name zonename;
+    var float friction;
+};
+var ZoneFriction zone_frictions[32];
+
+struct ZoneGravity
+{
+    var name zonename;
+    var vector gravity;
+};
+var ZoneGravity zone_gravities[32];
+
+const IceFriction = 0.25;
+const NormalFriction = 8;
+var vector NormalGravity;
+var vector FloatGrav;
+var vector MoonGrav;
+
 const ReconDefault = 5;
 
 var int behindTimer;
@@ -33,6 +53,13 @@ const FatnessTimerDefault = 60;
 var int speedTimer;
 const SpeedTimerDefault = 60;
 const SlowTimerDefault = 15;
+
+var int iceTimer;
+const IceTimerDefault = 60;
+
+var int gravityTimer;
+const GravityTimerDefault = 60;
+
 
 struct JsonElement
 {
@@ -258,6 +285,10 @@ function Init(CrowdControl cc, string addr)
     ccModule = cc;
     crowd_control_addr = addr; 
     
+    NormalGravity=vect(0,0,-950);
+    FloatGrav=vect(0,0,0.15);
+    MoonGrav=vect(0,0,-100);  
+    
     //Initialize the pending message buffer
     pendingMsg = "";
     
@@ -294,6 +325,8 @@ function Timer() {
         behindTimer--;
         if (behindTimer <= 0) {
             SetAllPlayersBehindView(False);
+            ccModule.BroadCastMessage("Returning to first person view...");
+
         }
     }
 
@@ -301,6 +334,7 @@ function Timer() {
         fatnessTimer--;
         if (fatnessTimer <= 0) {
             SetAllPlayersFatness(120);
+            ccModule.BroadCastMessage("Returning to normal fatness...");
         }
     }    
 
@@ -308,6 +342,23 @@ function Timer() {
         speedTimer--;
         if (speedTimer <= 0) {
             SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed);
+            ccModule.BroadCastMessage("Returning to normal move speed...");
+        }
+    }  
+    
+    if (iceTimer > 0) {
+        iceTimer--;
+        if (iceTimer <= 0) {
+            SetIcePhysics(False);
+            ccModule.BroadCastMessage("The ground thaws...");
+        }
+    }  
+    
+    if (gravityTimer > 0) {
+        gravityTimer--;
+        if (gravityTimer <= 0) {
+            SetMoonPhysics(False);
+            ccModule.BroadCastMessage("Gravity returns to normal...");
         }
     }  
     
@@ -640,12 +691,9 @@ function int swapPlayer(string viewer) {
 function RemoveAllAmmoFromPawn(Pawn p)
 {
 	local Inventory Inv;
-    ccModule.BroadCastMessage("Removing ammo from "$p.PlayerReplicationInfo.PlayerName);
 	for( Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory ) {
 		if ( Ammo(Inv) != None ) {
 			Ammo(Inv).AmmoAmount = 0;
-            ccModule.BroadCastMessage("Removing "$Inv.Name$" from "$p.PlayerReplicationInfo.PlayerName);
-
         }   
     }      
 }
@@ -836,7 +884,6 @@ function Weapon GiveWeaponToPawn(Pawn PlayerPawn, class<Weapon> WeaponClass, opt
   
     inv = PlayerPawn.FindInventoryType(WeaponClass);
 	if (inv != None ) {
-        ccModule.BroadCastMessage("Found an inventory type");
         newWeapon = Weapon(inv);
 		newWeapon.GiveAmmo(PlayerPawn);
         return newWeapon;
@@ -877,11 +924,113 @@ function int GiveWeapon(String viewer, String weaponName)
     weaponClass = GetWeaponClassByName(weaponName);
     
     foreach AllActors(class'Pawn',p) {
+        //TODO: This probably shouldn't give weapons to spectators
         GiveWeaponToPawn(p,weaponClass);
     }
     
     ccModule.BroadCastMessage(viewer$" gave everybody a weapon! ("$weaponName$")");
 }
+
+
+function float GetDefaultZoneFriction(ZoneInfo z)
+{
+    local int i;
+    for(i=0; i<ArrayCount(zone_frictions); i++) {
+        if( z.name == zone_frictions[i].zonename )
+            return zone_frictions[i].friction;
+    }
+    return NormalFriction;
+}
+
+function SaveDefaultZoneFriction(ZoneInfo z)
+{
+    local int i;
+    if( z.ZoneGroundFriction ~= NormalFriction ) return;
+    for(i=0; i<ArrayCount(zone_frictions); i++) {
+        if( zone_frictions[i].zonename == '' || z.name == zone_frictions[i].zonename ) {
+            zone_frictions[i].zonename = z.name;
+            zone_frictions[i].friction = z.ZoneGroundFriction;
+            return;
+        }
+    }
+}
+
+function vector GetDefaultZoneGravity(ZoneInfo z)
+{
+    local int i;
+    for(i=0; i<ArrayCount(zone_gravities); i++) {
+        if( z.name == zone_gravities[i].zonename )
+            return zone_gravities[i].gravity;
+        if( zone_gravities[i].zonename == '' )
+            break;
+    }
+    return NormalGravity;
+}
+
+function SaveDefaultZoneGravity(ZoneInfo z)
+{
+    local int i;
+    if( z.ZoneGravity.X ~= NormalGravity.X && z.ZoneGravity.Y ~= NormalGravity.Y && z.ZoneGravity.Z ~= NormalGravity.Z ) return;
+    for(i=0; i<ArrayCount(zone_gravities); i++) {
+        if( z.name == zone_gravities[i].zonename )
+            return;
+        if( zone_gravities[i].zonename == '' ) {
+            zone_gravities[i].zonename = z.name;
+            zone_gravities[i].gravity = z.ZoneGravity;
+            return;
+        }
+    }
+}
+
+function SetMoonPhysics(bool enabled) {
+    local ZoneInfo Z;
+    ForEach AllActors(class'ZoneInfo', Z)
+    {
+        if (enabled && Z.ZoneGravity != MoonGrav ) {
+            SaveDefaultZoneGravity(Z);
+            Z.ZoneGravity = MoonGrav;
+        }
+        else if ( (!enabled) && Z.ZoneGravity == MoonGrav ) {
+            Z.ZoneGravity = GetDefaultZoneGravity(Z);
+        }
+    }
+}
+
+function SetIcePhysics(bool enabled) {
+    local ZoneInfo Z;
+    ForEach AllActors(class'ZoneInfo', Z) {
+        if (enabled && Z.ZoneGroundFriction != IceFriction ) {
+            SaveDefaultZoneFriction(Z);
+            Z.ZoneGroundFriction = IceFriction;
+        }
+        else if ( (!enabled) && Z.ZoneGroundFriction == IceFriction ) {
+            Z.ZoneGroundFriction = GetDefaultZoneFriction(Z);
+        }
+    }
+}
+
+function int EnableIcePhysics(string viewer)
+{
+    if (iceTimer>0) {
+        return TempFail;
+    }
+    ccModule.BroadCastMessage(viewer@"made the ground freeze!");
+    SetIcePhysics(True);
+    iceTimer = IceTimerDefault;
+    return Success;
+}
+
+function int EnableMoonPhysics(string viewer)
+{
+    if (gravityTimer>0) {
+        return TempFail;
+    }
+    ccModule.BroadCastMessage(viewer@"reduced gravity!");
+    SetMoonPhysics(True);
+    gravityTimer = GravityTimerDefault;
+    return Success;
+}
+
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
@@ -930,8 +1079,10 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "give_redeemer":  //This is separate so that it can be priced differently
             return GiveWeapon(viewer,"WarHeadLauncher");
         case "ice_physics":
+            return EnableIcePhysics(viewer);
         case "low_grav":
-        //case "give_weaponXYZ"
+            return EnableMoonPhysics(viewer);
+
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

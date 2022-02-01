@@ -58,7 +58,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("give_weapon",[randomWeapon()])  #For testing a specific effect
+    #return ("low_grav",None)  #For testing a specific effect
     
     #effects.append(("gotta_go_slow",None));
     #return random.choice(effects)            #For testing a small selection of effects
@@ -78,7 +78,7 @@ def pickEffect():
     
     #effects.append(("full_armour",None))
 
-    #effects.append(("drop_selected_item",None))
+    effects.append(("drop_selected_item",None))
 
     #effects.append(("give_armour",[str(random.randint(10,100))]))
     
@@ -94,7 +94,7 @@ def pickEffect():
 
     effects.append(("gotta_go_slow",None))
 
-    #effects.append(("ice_physics",None))
+    effects.append(("ice_physics",None))
 
     effects.append(("third_person",None))
 
@@ -105,13 +105,14 @@ def pickEffect():
     effects.append(("skin_and_bones",None))
     effects.append(("no_ammo",None))
 
-    #effects.append(("give_"+randomWeapon(),None))
+    effects.append(("give_weapon",[randomWeapon()]))
+    effects.append(("give_ammo",[randomAmmo(),str(random.randint(1,3))]))
 
     effects.append(("nudge",None))
 
     effects.append(("swap_player_position",None))
 
-    #effects.append(("low_grav",None))
+    effects.append(("low_grav",None))
     
     effects.append(("give_ammo",[randomAmmo(),random.randint(1,2)]))
 

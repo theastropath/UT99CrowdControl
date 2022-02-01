@@ -58,7 +58,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("melee_only",None)  #For testing a specific effect
+    #return ("flood",None)  #For testing a specific effect
     
     #effects.append(("give_weapon",[randomWeapon()]))
     #return random.choice(effects)            #For testing a small selection of effects
@@ -110,6 +110,15 @@ def pickEffect():
 
     effects.append(("low_grav",None))
     
+    effects.append(("flood",None))
+    
+    effects.append(("melee_only",None))
+    
+    effects.append(("last_place_shield",None))
+    
+    effects.append(("blue_redeemer_shell",None))
+    effects.append(("first_place_slow",None))
+    
     effects.append(("give_ammo",[randomAmmo(),random.randint(1,2)]))
 
 
@@ -126,7 +135,7 @@ while True:
         print("Connected to ",addr)
         while True:
             #conn.send(x)
-            time.sleep(random.randint(5,10))
+            time.sleep(random.randint(30,40))
             effect = pickEffect()
             if effect!=None:
                 msg = genMsg(effect[0],effect[1])
@@ -136,4 +145,4 @@ while True:
                 except:
                     break
                 print("Sent")
-            time.sleep(random.randint(60,75))
+            #time.sleep(random.randint(60,75))

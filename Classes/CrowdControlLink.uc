@@ -36,6 +36,14 @@ struct ZoneGravity
 };
 var ZoneGravity zone_gravities[32];
 
+struct ZoneWater
+{
+    var name zonename;
+    var bool water;
+};
+var ZoneWater zone_waters[32];
+
+
 const IceFriction = 0.25;
 const NormalFriction = 8;
 var vector NormalGravity;
@@ -62,6 +70,9 @@ const GravityTimerDefault = 60;
 
 var int meleeTimer;
 const MeleeTimerDefault = 60;
+
+var int floodTimer;
+const FloodTimerDefault = 15;
 
 
 struct JsonElement
@@ -378,6 +389,16 @@ function Timer() {
             ccModule.BroadCastMessage("You may use ranged weapons again...");
         }
     }  
+    
+    if (floodTimer > 0) {
+        floodTimer--;
+        if (floodTimer <= 0) {
+            SetFlood(False);
+            UpdateAllPawnsSwimState();
+
+            ccModule.BroadCastMessage("The flood drains away...");
+        }
+    }  
 
     
 
@@ -680,12 +701,20 @@ function Pawn findRandomPawn()
 
 function int swapPlayer(string viewer) {
     local Pawn a,b;
+    local int tries;
     a = None;
     b = None;
     
-    while (a == None || b == None || a==b) {
+    tries = 0; //Prevent a runaway
+    
+    while (tries < 5 && (a == None || b == None || a==b)) {
         a = findRandomPawn();
         b = findRandomPawn();
+        tries++;
+    }
+    
+    if (tries == 5) {
+        return TempFail;
     }
     
     Swap(a,b);
@@ -1107,6 +1136,110 @@ function int StartMeleeOnlyTime(String viewer)
     meleeTimer = MeleeTimerDefault;
     
     return Success;
+}
+
+
+function bool GetDefaultZoneWater(ZoneInfo z)
+{
+    local int i;
+    for(i=0; i<ArrayCount(zone_waters); i++) {
+        if( z.name == zone_waters[i].zonename )
+            return zone_waters[i].water;
+    }
+    return True;
+}
+
+function SaveDefaultZoneWater(ZoneInfo z)
+{
+    local int i;
+    for(i=0; i<ArrayCount(zone_waters); i++) {
+        if( zone_waters[i].zonename == '' || z.name == zone_waters[i].zonename ) {
+            zone_waters[i].zonename = z.name;
+            zone_waters[i].water = z.bWaterZone;
+            return;
+        }
+    }
+}
+
+function SetFlood(bool enabled) {
+    local ZoneInfo Z;
+    ForEach AllActors(class'ZoneInfo', Z) {
+        if (enabled && Z.bWaterZone != True ) {
+            SaveDefaultZoneWater(Z);
+            Z.bWaterZone = True;
+        }
+        else if ( (!enabled) && Z.bWaterZone == True ) {
+            Z.bWaterZone = GetDefaultZoneWater(Z);
+        }
+    }
+}
+
+function UpdateAllPawnsSwimState()
+{
+    local PlayerPawn p;
+    
+    foreach AllActors(class'PlayerPawn',p) {
+        ccModule.BroadCastMessage("State before update was "$p.GetStateName());
+        if (p.Region.Zone.bWaterZone) {
+            p.setPhysics(PHYS_Swimming);
+		    p.GotoState('PlayerSwimming');
+        } else {
+            p.setPhysics(PHYS_Falling);
+		    p.GotoState('PlayerWalking');
+        
+        }
+    }
+
+}
+
+function int StartFlood(string viewer)
+{
+    if (floodTimer>0) {
+        return TempFail;
+    }
+    ccModule.BroadCastMessage(viewer@"started a flood!");
+    SetFlood(True);
+    UpdateAllPawnsSwimState();
+    floodTimer = FloodTimerDefault;
+    return Success;
+}
+
+//Find highest or lowest score player.
+//If multiple have the same score, it'll use the first one with that score it finds
+function Pawn findPawnByScore(bool highest)
+{
+    local Pawn cur;
+    local Pawn p;
+    
+    cur = None;
+    foreach AllActors(class'Pawn',p) {
+        if (cur==None){
+            cur = p;
+        } else {
+            if (highest){
+                if (p.PlayerReplicationInfo.Score > cur.PlayerReplicationInfo.Score) {
+                    cur = p;
+                }
+            } else {
+                if (p.PlayerReplicationInfo.Score < cur.PlayerReplicationInfo.Score) {
+                    cur = p;
+                }            
+            }
+        }
+    }
+    return cur;
+}
+
+function int LastPlaceShield(String viewer)
+{
+    local Pawn p;
+    
+    p = findPawnByScore(False); //Get lowest score player
+    
+    //Actually give them the shield belt
+    
+    ccModule.BroadCastMessage(viewer@"gave a Shield Belt to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
+    return Success;
 
 }
 
@@ -1162,11 +1295,16 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return EnableMoonPhysics(viewer);
         case "melee_only": //Force everyone to use melee for the duration (continuously check weapon and switch to melee choice)
             return StartMeleeOnlyTime(viewer);
-        case "blue_redeemer_shell": //Blow up first place player
-        case "first_place_slow": //Make the first place player really slow
+        case "flood": //Make every zone a water zone
+            return StartFlood(viewer);
         case "last_place_shield": //Give last place player a shield belt
+            return LastPlaceShield(viewer);
         case "last_place_bonus_dmg": //Give last place player a bonus damage item
-        
+        case "blue_redeemer_shell": //Blow up first place player
+        case "first_place_slow": //Make the first place player really slow   
+        case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death       
+        case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
+        case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

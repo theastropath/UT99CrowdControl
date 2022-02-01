@@ -738,8 +738,6 @@ function int GiveAmmo(String viewer, String ammoName, int amount)
     }
     
     ccModule.BroadCastMessage(viewer$" gave everybody some ammo! ("$ammoName$")");
-
-    
 }
 
 function int doNudge(string viewer) {
@@ -790,6 +788,101 @@ function int DropSelectedWeapon(string viewer) {
 
 }
 
+function class<Weapon> GetWeaponClassByName(String weaponName)
+{
+    local class<Weapon> weaponClass;
+    
+    switch(weaponName){
+        case "Translocator":
+            weaponClass = class'Translocator';
+            break;
+        case "Ripper":
+            weaponClass = class'Ripper';
+            break;
+        case "WarHeadLauncher":
+            weaponClass = class'WarHeadLauncher';
+            break;
+        case "BioRifle":
+            weaponClass = class'UT_BioRifle';
+            break;
+        case "FlakCannon":
+            weaponClass = class'UT_FlakCannon';
+            break;
+        case "SniperRifle":
+            weaponClass = class'SniperRifle';
+            break;
+        case "ShockRifle":
+            weaponClass = class'ShockRifle';
+            break;
+        case "PulseGun":
+            weaponClass = class'PulseGun';
+            break;
+        case "MiniGun":
+            weaponClass = class'Minigun2';
+            break;
+        case "SuperShockRifle":
+            weaponClass = class'SuperShockRifle';
+            break;
+        default:
+            break;
+    }
+    
+    return weaponClass;
+}
+function Weapon GiveWeaponToPawn(Pawn PlayerPawn, class<Weapon> WeaponClass, optional bool bBringUp)
+{
+	local Weapon NewWeapon;
+    local Inventory inv;
+  
+    inv = PlayerPawn.FindInventoryType(WeaponClass);
+	if (inv != None ) {
+        ccModule.BroadCastMessage("Found an inventory type");
+        newWeapon = Weapon(inv);
+		newWeapon.GiveAmmo(PlayerPawn);
+        return newWeapon;
+    }
+        
+	newWeapon = Spawn(WeaponClass);
+	if ( newWeapon != None ) {
+		newWeapon.RespawnTime = 0.0;
+		newWeapon.GiveTo(PlayerPawn);
+		newWeapon.bHeldItem = true;
+		newWeapon.GiveAmmo(PlayerPawn);
+		newWeapon.SetSwitchPriority(PlayerPawn);
+		newWeapon.WeaponSet(PlayerPawn);
+		newWeapon.AmbientGlow = 0;
+		if ( PlayerPawn.IsA('PlayerPawn') )
+			newWeapon.SetHand(PlayerPawn(PlayerPawn).Handedness);
+		else
+			newWeapon.GotoState('Idle');
+		if ( bBringUp ) {
+			PlayerPawn.Weapon.GotoState('DownWeapon');
+			PlayerPawn.PendingWeapon = None;
+			PlayerPawn.Weapon = newWeapon;
+			PlayerPawn.Weapon.BringUp();
+		}
+	}
+	return newWeapon;
+}
+
+
+function int GiveWeapon(String viewer, String weaponName)
+{
+    local class<Weapon> weaponClass;
+    local Pawn p;
+    local Inventory inv;
+    local Weapon weap;
+    local Actor a;
+    
+    weaponClass = GetWeaponClassByName(weaponName);
+    
+    foreach AllActors(class'Pawn',p) {
+        GiveWeaponToPawn(p,weaponClass);
+    }
+    
+    ccModule.BroadCastMessage(viewer$" gave everybody a weapon! ("$weaponName$")");
+}
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -830,6 +923,12 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return doNudge(viewer);
         case "drop_selected_item":
             return DropSelectedWeapon(viewer);
+        case "give_weapon":
+            return GiveWeapon(viewer,param[0]);
+        case "give_instagib":  //This is separate so that it can be priced differently
+            return GiveWeapon(viewer,"SuperShockRifle");
+        case "give_redeemer":  //This is separate so that it can be priced differently
+            return GiveWeapon(viewer,"WarHeadLauncher");
         case "ice_physics":
         case "low_grav":
         //case "give_weaponXYZ"

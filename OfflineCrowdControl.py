@@ -41,9 +41,16 @@ def randomAmmo():
 
 def randomWeapon():
     weapon = []
-    weapon.append('Ammo10mm')
-    weapon.append('Ammo20mm')
-    weapon.append('Ammo762mm')
+    weapon.append('Translocator')
+    weapon.append('Ripper')
+    weapon.append('WarHeadLauncher')
+    weapon.append('BioRifle')
+    weapon.append('FlakCannon')
+    weapon.append('SniperRifle')
+    weapon.append('ShockRifle')
+    weapon.append('PulseGun')
+    weapon.append('MiniGun')
+    weapon.append('SuperShockRifle')
 
     return random.choice(weapon).lower()
 
@@ -51,7 +58,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("drop_selected_item",None)  #For testing a specific effect
+    #return ("give_weapon",[randomWeapon()])  #For testing a specific effect
     
     #effects.append(("gotta_go_slow",None));
     #return random.choice(effects)            #For testing a small selection of effects

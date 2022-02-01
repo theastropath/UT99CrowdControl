@@ -761,6 +761,35 @@ function int doNudge(string viewer) {
     return Success;
 }
 
+function bool IsWeaponRemovable(Weapon w)
+{
+    switch(w.Class){
+        case class'Translocator':
+        case class'ImpactHammer':
+        case class'Enforcer':
+        case class'DoubleEnforcer':
+        case class'ChainSaw':
+            return False;
+        default:
+            return True;
+    }
+}
+
+function int DropSelectedWeapon(string viewer) {
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        if (IsWeaponRemovable(p.Weapon)){
+            p.DeleteInventory(p.Weapon);
+        }
+    }
+    
+    ccModule.BroadCastMessage(viewer$" stole your current weapon!");
+    
+    return Success;
+
+}
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -799,9 +828,10 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return giveAmmo(viewer,param[0],Int(param[1]));
         case "nudge":
             return doNudge(viewer);
+        case "drop_selected_item":
+            return DropSelectedWeapon(viewer);
         case "ice_physics":
         case "low_grav":
-        case "drop_selected_item":
         //case "give_weaponXYZ"
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );

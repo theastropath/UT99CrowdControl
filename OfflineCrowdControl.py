@@ -51,7 +51,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("nudge",None)  #For testing a specific effect
+    #return ("drop_selected_item",None)  #For testing a specific effect
     
     #effects.append(("gotta_go_slow",None));
     #return random.choice(effects)            #For testing a small selection of effects

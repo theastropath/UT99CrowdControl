@@ -60,6 +60,9 @@ const IceTimerDefault = 60;
 var int gravityTimer;
 const GravityTimerDefault = 60;
 
+var int meleeTimer;
+const MeleeTimerDefault = 60;
+
 
 struct JsonElement
 {
@@ -310,6 +313,13 @@ function Timer() {
         ManualReceiveBinary();
     }
     
+    
+    //Want to force people to melee more frequently than once a second
+    if (meleeTimer > 0) {
+        ForceAllPawnsToMelee();
+    }
+    
+    
     if (ticker%10 != 0) {
         return;
     }
@@ -361,6 +371,14 @@ function Timer() {
             ccModule.BroadCastMessage("Gravity returns to normal...");
         }
     }  
+
+    if (meleeTimer > 0) {
+        meleeTimer--;
+        if (meleeTimer <= 0) {
+            ccModule.BroadCastMessage("You may use ranged weapons again...");
+        }
+    }  
+
     
 
 }
@@ -370,8 +388,6 @@ function RemoveAllArmor(Pawn p)
     // If there is armor in our inventory chain, unlink it and destroy it
 	local actor Link;
     local Inventory armor;
-	local bool ItemExisted;
-
 
 	for( Link = p; Link!=None; Link=Link.Inventory )
 	{
@@ -1031,6 +1047,65 @@ function int EnableMoonPhysics(string viewer)
     return Success;
 }
 
+function Weapon FindMeleeWeaponInPawnInventory(Pawn p)
+{
+	local actor Link;
+    local Weapon weap;
+
+	for( Link = p; Link!=None; Link=Link.Inventory )
+	{
+		if( Weapon(Link.Inventory) != None )
+		{
+            weap = Weapon(Link.Inventory);
+			if (weap.bMeleeWeapon==True){
+                return weap;
+            }
+		}
+	}
+    
+    return None;
+}
+
+function ForcePawnToMeleeWeapon(Pawn p)
+{
+    local Weapon meleeweapon;
+    
+    if (p.Weapon == None || p.Weapon.bMeleeWeapon==True) {
+        return;  //No need to do a lookup if it's already melee or nothing
+    }
+    
+    meleeweapon = FindMeleeWeaponInPawnInventory(p);
+    
+    p.Weapon.GotoState('DownWeapon');
+	p.PendingWeapon = None;
+	p.Weapon = meleeweapon;
+	p.Weapon.BringUp();
+}
+
+function ForceAllPawnsToMelee()
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        ForcePawnToMeleeWeapon(p);
+    }
+}
+
+function int StartMeleeOnlyTime(String viewer)
+{
+    if (meleeTimer > 0) {
+        return TempFail;
+    }
+    
+    ForceAllPawnsToMelee();
+    
+    ccModule.BroadCastMessage(viewer@"requests melee weapons only!");
+    
+    meleeTimer = MeleeTimerDefault;
+    
+    return Success;
+
+}
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
@@ -1082,7 +1157,13 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return EnableIcePhysics(viewer);
         case "low_grav":
             return EnableMoonPhysics(viewer);
-
+        case "melee_only": //Force everyone to use melee for the duration (continuously check weapon and switch to melee choice)
+            return StartMeleeOnlyTime(viewer);
+        case "blue_redeemer_shell": //Blow up first place player
+        case "first_place_slow": //Make the first place player really slow
+        case "last_place_shield": //Give last place player a shield belt
+        case "last_place_bonus_dmg": //Give last place player a bonus damage item
+        
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

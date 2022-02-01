@@ -742,6 +742,25 @@ function int GiveAmmo(String viewer, String ammoName, int amount)
     
 }
 
+function int doNudge(string viewer) {
+    local Rotator r;
+    local vector newAccel;
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        newAccel.X = Rand(501)-100;
+        newAccel.Y = Rand(501)-100;
+        //newAccel.Z = Rand(31);
+        
+        //Not super happy with how this looks,
+        //Since you sort of just teleport to the new position
+        p.MoveSmooth(newAccel);
+    }
+        
+    ccModule.BroadCastMessage(viewer@"nudged you a little bit");
+    return Success;
+}
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -778,8 +797,9 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return NoAmmo(viewer);
         case "give_ammo":
             return giveAmmo(viewer,param[0],Int(param[1]));
-        case "ice_physics":
         case "nudge":
+            return doNudge(viewer);
+        case "ice_physics":
         case "low_grav":
         case "drop_selected_item":
         //case "give_weaponXYZ"

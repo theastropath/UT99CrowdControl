@@ -1050,7 +1050,7 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return DisableJump(viewer); //Not actually implemented
         case "third_person":
             return ThirdPerson(viewer);
-        case "double_dmg":
+        case "bonus_dmg":
             return GiveDamageItem(viewer);
         case "full_fat":
             return FullFat(viewer);

@@ -64,28 +64,24 @@ def pickEffect():
     #return random.choice(effects)            #For testing a small selection of effects
 
     
-    #effects.append(None)
-    #effects.append(None)
-    #effects.append(None)
-
-    #This might be too mean for a machine
-    #effects.append(("kill",None))
+    effects.append(None)
+    effects.append(None)
+    effects.append(None)
     
     effects.append(("sudden_death",None))
 
     effects.append(("full_heal",None))
     effects.append(("full_heal",None))
     
-    #effects.append(("full_armour",None))
 
     effects.append(("drop_selected_item",None))
+    
+    effects.append(("give_health",[str(random.randint(10,100))]))
+    effects.append(("give_health",[str(random.randint(10,100))]))
+    effects.append(("give_health",[str(random.randint(10,100))]))
 
-    #effects.append(("give_armour",[str(random.randint(10,100))]))
-    
-    effects.append(("give_health",[str(random.randint(10,100))]))
-    effects.append(("give_health",[str(random.randint(10,100))]))
-    effects.append(("give_health",[str(random.randint(10,100))]))
-    
+    #effects.append(("full_armour",None))
+
     #effects.append(("give_armour",[str(random.randint(10,100))]))
 
     #effects.append(("disable_jump",None))
@@ -98,7 +94,7 @@ def pickEffect():
 
     effects.append(("third_person",None))
 
-    effects.append(("double_dmg",None))
+    effects.append(("bonus_dmg",None))
     
     effects.append(("thanos",None))
     effects.append(("full_fat",None))

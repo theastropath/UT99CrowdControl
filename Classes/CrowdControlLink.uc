@@ -933,15 +933,18 @@ function int GiveWeapon(String viewer, String weaponName)
 {
     local class<Weapon> weaponClass;
     local Pawn p;
+    local PlayerPawn pp;
     local Inventory inv;
     local Weapon weap;
     local Actor a;
     
     weaponClass = GetWeaponClassByName(weaponName);
     
-    foreach AllActors(class'Pawn',p) {
-        //TODO: This probably shouldn't give weapons to spectators
-        GiveWeaponToPawn(p,weaponClass);
+    foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
+        pp = PlayerPawn(p);
+        if (pp!=None && pp.bReadyToPlay==True) { //Don't give weapons to spectators
+            GiveWeaponToPawn(p,weaponClass);
+        }
     }
     
     ccModule.BroadCastMessage(viewer$" gave everybody a weapon! ("$weaponName$")");

@@ -60,7 +60,7 @@ def pickEffect():
     
     #return ("melee_only",None)  #For testing a specific effect
     
-    #effects.append(("gotta_go_slow",None));
+    #effects.append(("give_weapon",[randomWeapon()]))
     #return random.choice(effects)            #For testing a small selection of effects
 
     

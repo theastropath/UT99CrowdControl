@@ -1311,6 +1311,29 @@ function int FirstPlaceSlow(String viewer)
 }
 
 
+function int BlueRedeemerShell(String viewer)
+{
+    local Pawn high,low;
+    local WarShell missile;
+    
+    high = findPawnByScore(True);
+    low = findPawnByScore(False);
+    
+    if (high==None || low == None || high == low){
+        return TempFail;
+    }
+    
+    missile = Spawn(class'WarShell',low,,high.Location);
+    missile.SetOwner(low);
+    missile.GotoState('Flying');
+    missile.Explode(high.Location,high.Location);
+
+    ccModule.BroadCastMessage(viewer$" dropped a redeemer shell on "$high.PlayerReplicationInfo.PlayerName$"'s head, since they are in first place!");
+    
+    return Success;
+}
+
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -1370,6 +1393,7 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "first_place_slow": //Make the first place player really slow   
             return FirstPlaceSlow(viewer);
         case "blue_redeemer_shell": //Blow up first place player
+            return BlueRedeemerShell(viewer);
         case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death       
         case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
         case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      

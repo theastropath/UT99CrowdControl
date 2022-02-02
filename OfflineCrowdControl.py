@@ -58,9 +58,11 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("flood",None)  #For testing a specific effect
+    #return ("last_place_shield",None)  #For testing a specific effect
     
-    #effects.append(("give_weapon",[randomWeapon()]))
+    #effects.append(("last_place_shield",None))
+    #effects.append(("last_place_bonus_dmg",None))
+    #effects.append(("first_place_slow",None))
     #return random.choice(effects)            #For testing a small selection of effects
 
     
@@ -80,7 +82,7 @@ def pickEffect():
     effects.append(("give_health",[str(random.randint(10,100))]))
     effects.append(("give_health",[str(random.randint(10,100))]))
 
-    #effects.append(("full_armour",None))
+    effects.append(("full_armour",None))
 
     #effects.append(("give_armour",[str(random.randint(10,100))]))
 
@@ -115,6 +117,7 @@ def pickEffect():
     effects.append(("melee_only",None))
     
     effects.append(("last_place_shield",None))
+    effects.append(("last_place_bonus_dmg",None))
     
     effects.append(("blue_redeemer_shell",None))
     effects.append(("first_place_slow",None))

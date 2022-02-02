@@ -61,6 +61,7 @@ const FatnessTimerDefault = 60;
 var int speedTimer;
 const SpeedTimerDefault = 60;
 const SlowTimerDefault = 15;
+const SingleSlowTimerDefault = 45;
 
 var int iceTimer;
 const IceTimerDefault = 60;
@@ -453,11 +454,16 @@ function int FullHeal(string viewer)
 
 }
 
-//This is a bit more complicated than anticipated, due to armor being carried in inventory
+//Shield Belt for everybody!
 function int FullArmour(string viewer)
 {
-    //TBD
-    ccModule.BroadCastMessage("Everyone has been brought to 100 armor by "$viewer$"!");
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        GiveShieldBeltToPawn(p);
+    }
+   
+    ccModule.BroadCastMessage(viewer$" has given everyone a shield belt!");
     
     return Success;
 }
@@ -516,19 +522,25 @@ function int ThirdPerson(String viewer)
 
 }
 
+function GiveUDamageToPawn(Pawn p)
+{
+    local UDamage dam;
+    
+    dam = Spawn(class'UDamage');
+        
+    dam.SetOwner(p);
+    dam.Inventory = p.Inventory;
+    p.Inventory = dam;
+    dam.Activate();
+
+}
+
 function int GiveDamageItem(String viewer)
 {
     local Pawn p;
-    local UDamage dam;
-    local inventory inv;
     
     foreach AllActors(class'Pawn',p) {
-        dam = Spawn(class'UDamage');
-        
-        dam.SetOwner(p);
-        dam.Inventory = p.Inventory;
-        p.Inventory = dam;
-        dam.Activate();
+        GiveUDamageToPawn(p);
     }
     
     ccModule.BroadCastMessage(viewer$" gave everyone a damage powerup!");
@@ -1230,78 +1242,134 @@ function Pawn findPawnByScore(bool highest)
     return cur;
 }
 
+function GiveShieldBeltToPawn(Pawn p)
+{
+    local UT_ShieldBelt belt;
+    belt = Spawn(class'UT_ShieldBelt');
+        
+    belt.SetOwner(p);
+    belt.Inventory = p.Inventory;
+    p.Inventory = belt;
+    belt.PickupFunction(p);
+}
+
 function int LastPlaceShield(String viewer)
 {
     local Pawn p;
-    
+
     p = findPawnByScore(False); //Get lowest score player
+    if (p == None) {
+        return TempFail;
+    }
     
     //Actually give them the shield belt
+    GiveShieldBeltToPawn(p);
     
     ccModule.BroadCastMessage(viewer@"gave a Shield Belt to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
     return Success;
+}
+
+function int LastPlaceDamage(String viewer)
+{
+    local Pawn p;
+
+    p = findPawnByScore(False); //Get lowest score player
+    if (p == None) {
+        return TempFail;
+    }
+    
+    //Actually give them the damage bonus
+    GiveUDamageToPawn(p);
+    
+    ccModule.BroadCastMessage(viewer@"gave a Damage Amplifier to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
+    return Success;
+
 
 }
+
+function int FirstPlaceSlow(String viewer)
+{
+    local Pawn p;
+
+    if (speedTimer>0) {
+        return TempFail;
+    }
+    
+    p = findPawnByScore(True); //Get Highest score player
+    
+    if (p == None) {
+        return TempFail;
+    }
+
+    p.GroundSpeed = (class'TournamentPlayer'.Default.GroundSpeed / 3);
+
+    speedTimer = SingleSlowTimerDefault;
+
+    ccModule.BroadCastMessage(viewer$" made "$p.PlayerReplicationInfo.PlayerName$" slow as punishment for being in first place!");
+    
+    return Success;   
+}
+
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
     switch(code) {
-        case "sudden_death":
+        case "sudden_death":  //Everyone loses all armour and goes down to one health
             return SuddenDeath(viewer);
-        case "full_heal":
+        case "full_heal":  //Everyone gets brought up to 100 health (not brought down if overhealed though)
             return FullHeal(viewer);
-        case "full_armour":
-            return FullArmour(viewer); //Not actually implemented
-        case "give_health":
+        case "full_armour": //Everyone gets a shield belt
+            return FullArmour(viewer); 
+        case "give_health": //Give an arbitrary amount of health.  Allows overhealing, up to 199
             return GiveHealth(viewer,Int(param[0]));
-        case "give_armour":
-            return GiveArmour(viewer,Int(param[0])); //Not actually implemented
         case "disable_jump":
             return DisableJump(viewer); //Not actually implemented
-        case "third_person":
+        case "third_person":  //Switches to behind view for everyone
             return ThirdPerson(viewer);
-        case "bonus_dmg":
+        case "bonus_dmg":   //Gives everyone a damage bonus item (triple damage)
             return GiveDamageItem(viewer);
-        case "full_fat":
+        case "full_fat":   //Makes everyone really fat for a minute
             return FullFat(viewer);
-        case "skin_and_bones":
+        case "skin_and_bones":  //Makes everyone really skinny for a minute
             return SkinAndBones(viewer);
-        case "gotta_go_fast":
+        case "gotta_go_fast":  //Makes everyone really fast for a minute
             return GottaGoFast(viewer);
-        case "gotta_go_slow":
+        case "gotta_go_slow":  //Makes everyone really slow for 15 seconds (A minute was too much!)
             return GottaGoSlow(viewer);
-        case "thanos":
+        case "thanos":  //Every player has a 50% chance of being killed
             return ThanosSnap(viewer);
-        case "swap_player_position":
+        case "swap_player_position":  //Picks two random players and swaps their positions
             return swapPlayer(viewer);
-        case "no_ammo":
+        case "no_ammo":  //Removes all ammo from all players
             return NoAmmo(viewer);
-        case "give_ammo":
+        case "give_ammo":  //Gives X boxes of a particular ammo type to all players
             return giveAmmo(viewer,param[0],Int(param[1]));
-        case "nudge":
+        case "nudge":  //All players get nudged slightly in a random direction
             return doNudge(viewer);
-        case "drop_selected_item":
+        case "drop_selected_item":  //Destroys the currently equipped weapon (Except for melee, translocator, and enforcers)
             return DropSelectedWeapon(viewer);
-        case "give_weapon":
+        case "give_weapon":  //Gives all players a specific weapon
             return GiveWeapon(viewer,param[0]);
         case "give_instagib":  //This is separate so that it can be priced differently
             return GiveWeapon(viewer,"SuperShockRifle");
         case "give_redeemer":  //This is separate so that it can be priced differently
             return GiveWeapon(viewer,"WarHeadLauncher");
-        case "ice_physics":
+        case "ice_physics":  //Makes the floor very slippery (This is kind of stuttery in multiplayer...) for a minute
             return EnableIcePhysics(viewer);
-        case "low_grav":
+        case "low_grav":  //Makes the world entirely low gravity for a minute
             return EnableMoonPhysics(viewer);
         case "melee_only": //Force everyone to use melee for the duration (continuously check weapon and switch to melee choice)
             return StartMeleeOnlyTime(viewer);
-        case "flood": //Make every zone a water zone
+        case "flood": //Make the entire map a water zone for a minute!
             return StartFlood(viewer);
         case "last_place_shield": //Give last place player a shield belt
             return LastPlaceShield(viewer);
         case "last_place_bonus_dmg": //Give last place player a bonus damage item
-        case "blue_redeemer_shell": //Blow up first place player
+            return LastPlaceDamage(viewer);
         case "first_place_slow": //Make the first place player really slow   
+            return FirstPlaceSlow(viewer);
+        case "blue_redeemer_shell": //Blow up first place player
         case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death       
         case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
         case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      

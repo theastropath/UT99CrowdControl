@@ -8,6 +8,7 @@ var IpAddr addr;
 var int ticker;
 var int reconnectTimer;
 var string pendingMsg;
+var bool enabled;
 
 const Success = 0;
 const Failed = 1;
@@ -308,6 +309,7 @@ function Init(CrowdControl cc, string addr)
     
     ccModule = cc;
     crowd_control_addr = addr; 
+    enabled = True;
     
     NormalGravity=vect(0,0,-950);
     FloatGrav=vect(0,0,0.15);
@@ -334,7 +336,9 @@ function Timer() {
     
     ticker++;
     if (IsConnected()) {
-        ManualReceiveBinary();
+        if (enabled){
+            ManualReceiveBinary();
+        }
     }
     
     
@@ -351,7 +355,9 @@ function Timer() {
     if (!IsConnected()) {
         reconnectTimer-=1;
         if (reconnectTimer <= 0){
-            Resolve(crowd_control_addr);
+            if (enabled){
+                Resolve(crowd_control_addr);
+            }
         }
     }
 
@@ -1415,16 +1421,12 @@ function int FindTeamWithLeastPlayers()
         pCount[p.PlayerReplicationInfo.Team]++;
     }
     
-    for (i = 0; i < 256;i++){
-        if (pCount[i]!=0){
-            ccModule.BroadCastMessage("Team "$i$" has "$pCount[i]$" players");
-        }
-        
+    for (i = 0; i < 256;i++){        
         if (pCount[i]!=0 && pCount[i] < pCount[lowTeam]) {
             lowTeam = i;
         }
     }
-    ccModule.BroadCastMessage("Lowest team is "$lowTeam);
+    //ccModule.BroadCastMessage("Lowest team is "$lowTeam);
     return lowTeam;
 
 }

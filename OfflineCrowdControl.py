@@ -60,7 +60,7 @@ def pickEffect():
     effects = []
     
     #return ("give_weapon",["RocketLauncher"])  #For testing a specific effect
-    #return ("vampire_mode",None)  #For testing a specific effect
+    #return ("spawn_a_bot_attack",None)  #For testing a specific effect
     
     #effects.append(("last_place_shield",None))
     #effects.append(("last_place_bonus_dmg",None))

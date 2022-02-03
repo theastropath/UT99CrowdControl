@@ -78,6 +78,10 @@ const FloodTimerDefault = 15;
 var int vampireTimer;
 const VampireTimerDefault = 60;
 
+const MaxAddedBots = 10;
+var Bot added_bots[10];
+var int numAddedBots;
+
 
 struct JsonElement
 {
@@ -300,6 +304,8 @@ function JsonMsg ParseJson (string msg) {
 
 function Init(CrowdControl cc, string addr)
 {
+    local int i;
+    
     ccModule = cc;
     crowd_control_addr = addr; 
     
@@ -313,6 +319,9 @@ function Init(CrowdControl cc, string addr)
     //Initialize the ticker
     ticker = 0;
     
+    for (i=0;i<MaxAddedBots;i++){
+        added_bots[i]=None;
+    }
 
     Resolve(crowd_control_addr);
 
@@ -416,9 +425,21 @@ function Timer() {
 
 function ScoreKill(Pawn Killer,Pawn Other)
 {
+    local int i;
     //ccModule.BroadCastMessage(Killer.PlayerReplicationInfo.PlayerName$" just killed "$Other.PlayerReplicationInfo.PlayerName);
     
     //Check if the killed pawn is a bot that we don't want to respawn
+    for (i=0;i<MaxAddedBots;i++){
+        if (added_bots[i]!=None && added_bots[i]==Other) {
+            added_bots[i]=None;
+            //ccModule.BroadCastMessage("Should be destroying added bot "$Other.PlayerReplicationInfo.PlayerName);
+            ccModule.BroadCastMessage("Crowd Control viewer "$Other.PlayerReplicationInfo.PlayerName$" has left the match");
+            Other.SpawnGibbedCarcass();
+            Other.Destroy(); //This may cause issues if there are more mutators caring about ScoreKill.  Probably should schedule this deletion for later instead...
+            numAddedBots--;
+        }
+    }
+    
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, 
@@ -509,6 +530,7 @@ function int GiveArmour(string viewer,int amount)
     
     return Success;
 }
+
 function int GiveHealth(string viewer,int amount)
 {
     local Pawn p;
@@ -518,19 +540,6 @@ function int GiveHealth(string viewer,int amount)
     }
     
     ccModule.BroadCastMessage("Everyone has been given "$amount$" health by "$viewer$"!");
-    
-    return Success;
-}
-
-function int DisableJump(String viewer)
-{
-    local Pawn p;
-    
-    foreach AllActors(class'Pawn',p) {
-        //TBD
-    }
-    
-    ccModule.BroadCastMessage(viewer$" says NO JUMPING!");
     
     return Success;
 }
@@ -1264,7 +1273,7 @@ function Pawn findPawnByScore(bool highest, int avoidTeam)
     
     cur = None;
     foreach AllActors(class'Pawn',p) {
-        ccModule.BroadCastMessage(p.PlayerReplicationInfo.PlayerName$" is on team "$p.PlayerReplicationInfo.Team);
+        //ccModule.BroadCastMessage(p.PlayerReplicationInfo.PlayerName$" is on team "$p.PlayerReplicationInfo.Team);
         if (cur==None){
             if (avoid==False || (avoid==True && p.PlayerReplicationInfo.Team!=avoidTeam)) {
                 cur = p;
@@ -1458,7 +1467,7 @@ function Bot SpawnBot(out NavigationPoint StartSpot, String botname)
 	BotN = game.BotConfig.ChooseBotInfo();
 	
 	// Find a start spot.
-	StartSpot = game.FindPlayerStart(None, 255);
+	StartSpot = game.FindPlayerStart(None, lowTeam);
 	if( StartSpot == None )
 	{
 		log("Could not find starting spot for Bot");
@@ -1552,19 +1561,45 @@ function Bot AddBot(string botname)
 		game.WorldLog.LogPlayerConnect(NewBot);
 		game.WorldLog.FlushLog();
 	}
+    
+    return NewBot;
 
 }
 
 function int SpawnNewBot(String viewer,name Orders)
 {
     local Bot NewBot;
+    local int i;
+    local bool stored;
+    
     NewBot = AddBot(viewer);
     
     if (NewBot == None){
-         return TempFail;
+        //ccModule.BroadCastMessage("Failed to spawn a bot somehow");
+        return TempFail;
+    }
+    
+    if (numAddedBots>=MaxAddedBots) {
+        //ccModule.BroadCastMessage("Too many bots! "$numAddedBots$">="$MaxAddedBots);
+        return TempFail;
     }
     
     //Add bot to list of "added bots", so that they can be removed on death (In ScoreKill)
+    stored = False;
+    for (i=0;i<MaxAddedBots && stored==False;i++) {
+        if (added_bots[i]==None){
+            added_bots[i]=NewBot;
+            stored=True;
+            numAddedBots++;
+            //ccModule.BroadCastMessage(NewBot.PlayerReplicationInfo.PlayerName$" stored in slot "$i);
+        }
+    }
+    
+    if (stored==False) {
+        //No space to store this bot!  Remove the bot again and fail.  This shouldn't happen.
+        NewBot.Destroy();
+        return TempFail;
+    }
     
     NewBot.SetOrders(Orders,None);
     
@@ -1596,8 +1631,6 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return FullArmour(viewer); 
         case "give_health": //Give an arbitrary amount of health.  Allows overhealing, up to 199
             return GiveHealth(viewer,Int(param[0]));
-        case "disable_jump":
-            return DisableJump(viewer); //Not actually implemented
         case "third_person":  //Switches to behind view for everyone
             return ThirdPerson(viewer);
         case "bonus_dmg":   //Gives everyone a damage bonus item (triple damage)

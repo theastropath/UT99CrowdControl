@@ -28,6 +28,7 @@ function PreBeginPlay()
 {
    initialized = False;
    InitCC();
+   Level.Game.RegisterDamageMutator(self);
 }
 
 function ModifyPlayer(Pawn Other)
@@ -46,5 +47,15 @@ function ScoreKill(Pawn Killer, Pawn Other) //Gets called when someone is killed
 
    if (NextMutator != None)
       NextMutator.ScoreKill(Killer,Other);
-
 }
+
+//Gets called when someone takes damage
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, 
+						out Vector Momentum, name DamageType)
+{
+    ccLink.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+    
+	if ( NextDamageMutator != None )
+		NextDamageMutator.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+}
+

@@ -75,6 +75,9 @@ const MeleeTimerDefault = 60;
 var int floodTimer;
 const FloodTimerDefault = 15;
 
+var int vampireTimer;
+const VampireTimerDefault = 60;
+
 
 struct JsonElement
 {
@@ -401,7 +404,13 @@ function Timer() {
         }
     }  
 
-    
+    if (vampireTimer > 0) {
+        vampireTimer--;
+        if (vampireTimer <= 0) {
+            ccModule.BroadCastMessage("You no longer feed on the blood of others...");
+        }
+    }  
+   
 
 }
 
@@ -410,6 +419,23 @@ function ScoreKill(Pawn Killer,Pawn Other)
     //ccModule.BroadCastMessage(Killer.PlayerReplicationInfo.PlayerName$" just killed "$Other.PlayerReplicationInfo.PlayerName);
     
     //Check if the killed pawn is a bot that we don't want to respawn
+}
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, 
+						out Vector Momentum, name DamageType)
+{
+    //ccModule.BroadCastMessage(InstigatedBy.PlayerReplicationInfo.PlayerName$" inflicted "$ActualDamage$" damage to "$Victim.PlayerReplicationInfo.PlayerName);
+    
+    //Check if vampire mode timer is running, and if it is, do the vampire thing
+    //Don't allow healing off of damage to yourself
+    if (vampireTimer > 0 && Victim!=InstigatedBy) {
+        InstigatedBy.Health += (ActualDamage/2); //Don't heal the full amount of damage
+        
+        //Don't let it overheal
+        if (InstigatedBy.Health > 199) {
+            InstigatedBy.Health = 199;
+        }
+    }
 }
 
 function RemoveAllArmor(Pawn p)
@@ -1547,6 +1573,17 @@ function int SpawnNewBot(String viewer,name Orders)
     return Success;
 }
 
+function int StartVampireMode(string viewer)
+{
+    if (vampireTimer>0) {
+        return TempFail;
+    }
+    ccModule.BroadCastMessage(viewer@"made everyone have a taste for blood!");
+    vampireTimer = VampireTimerDefault;
+    return Success;
+}
+
+
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
 
@@ -1611,6 +1648,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return SpawnNewBot(viewer,'Attack');        
         case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
             return SpawnNewBot(viewer,'Defend');        
+        case "vampire_mode":  //Inflicting damage heals you for the damage dealt (Can grab damage via MutatorTakeDamage)
+            return StartVampireMode(viewer);
         case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );

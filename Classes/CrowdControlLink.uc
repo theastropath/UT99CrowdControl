@@ -405,6 +405,13 @@ function Timer() {
 
 }
 
+function ScoreKill(Pawn Killer,Pawn Other)
+{
+    //ccModule.BroadCastMessage(Killer.PlayerReplicationInfo.PlayerName$" just killed "$Other.PlayerReplicationInfo.PlayerName);
+    
+    //Check if the killed pawn is a bot that we don't want to respawn
+}
+
 function RemoveAllArmor(Pawn p)
 {
     // If there is armor in our inventory chain, unlink it and destroy it
@@ -925,6 +932,9 @@ function class<Weapon> GetWeaponClassByName(String weaponName)
         case "MiniGun":
             weaponClass = class'Minigun2';
             break;
+        case "RocketLauncher":
+            weaponClass = class'UT_EightBall';
+            break;
         case "SuperShockRifle":
             weaponClass = class'SuperShockRifle';
             break;
@@ -1218,23 +1228,33 @@ function int StartFlood(string viewer)
 
 //Find highest or lowest score player.
 //If multiple have the same score, it'll use the first one with that score it finds
-function Pawn findPawnByScore(bool highest)
+function Pawn findPawnByScore(bool highest, int avoidTeam)
 {
     local Pawn cur;
     local Pawn p;
+    local bool avoid;
+    
+    avoid = (avoidTeam!=255);
     
     cur = None;
     foreach AllActors(class'Pawn',p) {
+        ccModule.BroadCastMessage(p.PlayerReplicationInfo.PlayerName$" is on team "$p.PlayerReplicationInfo.Team);
         if (cur==None){
-            cur = p;
+            if (avoid==False || (avoid==True && p.PlayerReplicationInfo.Team!=avoidTeam)) {
+                cur = p;
+            }
         } else {
             if (highest){
                 if (p.PlayerReplicationInfo.Score > cur.PlayerReplicationInfo.Score) {
-                    cur = p;
+                    if (avoid==False || (avoid==True && p.PlayerReplicationInfo.Team!=avoidTeam)) {
+                        cur = p;
+                    }
                 }
             } else {
                 if (p.PlayerReplicationInfo.Score < cur.PlayerReplicationInfo.Score) {
-                    cur = p;
+                    if (avoid==False || (avoid==True && p.PlayerReplicationInfo.Team!=avoidTeam)) {
+                        cur = p;
+                    }
                 }            
             }
         }
@@ -1257,7 +1277,7 @@ function int LastPlaceShield(String viewer)
 {
     local Pawn p;
 
-    p = findPawnByScore(False); //Get lowest score player
+    p = findPawnByScore(False,255); //Get lowest score player
     if (p == None) {
         return TempFail;
     }
@@ -1273,7 +1293,7 @@ function int LastPlaceDamage(String viewer)
 {
     local Pawn p;
 
-    p = findPawnByScore(False); //Get lowest score player
+    p = findPawnByScore(False,255); //Get lowest score player
     if (p == None) {
         return TempFail;
     }
@@ -1295,7 +1315,7 @@ function int FirstPlaceSlow(String viewer)
         return TempFail;
     }
     
-    p = findPawnByScore(True); //Get Highest score player
+    p = findPawnByScore(True,255); //Get Highest score player
     
     if (p == None) {
         return TempFail;
@@ -1310,14 +1330,23 @@ function int FirstPlaceSlow(String viewer)
     return Success;   
 }
 
-
+//If teams, should find highest on winning team, and lowest on losing team
 function int BlueRedeemerShell(String viewer)
 {
     local Pawn high,low;
     local WarShell missile;
+    local int avoidTeam;
     
-    high = findPawnByScore(True);
-    low = findPawnByScore(False);
+    
+    high = findPawnByScore(True,255);  //Target individual player who is doing best
+    
+    if (Level.Game.bTeamGame==True){
+        avoidTeam = high.PlayerReplicationInfo.Team;
+    } else {
+        avoidTeam = 255;
+    }
+    
+    low = findPawnByScore(False,avoidTeam);  //Find worst player who is on a different team (if a team game)
     
     if (high==None || low == None || high == low){
         return TempFail;
@@ -1325,6 +1354,7 @@ function int BlueRedeemerShell(String viewer)
     
     missile = Spawn(class'WarShell',low,,high.Location);
     missile.SetOwner(low);
+    missile.Instigator = low;  //Instigator is the one who gets credit for the kill
     missile.GotoState('Flying');
     missile.Explode(high.Location,high.Location);
 
@@ -1333,6 +1363,189 @@ function int BlueRedeemerShell(String viewer)
     return Success;
 }
 
+function int FindTeamWithLeastPlayers()
+{
+    local Pawn p;
+    local int pCount[256]; //Technically there are team ids up to 255, but really 0 to 3 and 255 are used
+    local int i;
+    local int lowTeam;
+    
+    lowTeam = 0;
+    
+    if (Level.Game.bTeamGame==False){
+        return 255;
+    }
+    
+    foreach AllActors(class'Pawn',p) {
+        pCount[p.PlayerReplicationInfo.Team]++;
+    }
+    
+    for (i = 0; i < 256;i++){
+        if (pCount[i]!=0){
+            ccModule.BroadCastMessage("Team "$i$" has "$pCount[i]$" players");
+        }
+        
+        if (pCount[i]!=0 && pCount[i] < pCount[lowTeam]) {
+            lowTeam = i;
+        }
+    }
+    ccModule.BroadCastMessage("Lowest team is "$lowTeam);
+    return lowTeam;
+
+}
+
+//Stolen from DeathMatchPlus class with minor tweaks to force the bot name and the team they're on
+function Bot SpawnBot(out NavigationPoint StartSpot, String botname)
+{
+	local bot NewBot;
+	local int BotN;
+	local Pawn P;
+    local DeathMatchPlus game;
+    local int lowTeam;
+    
+    game = DeathMatchPlus(Level.Game);
+    
+    if (game==None)
+    {
+        return None;
+    }
+    
+    lowTeam = FindTeamWithLeastPlayers();
+
+
+	game.Difficulty = game.BotConfig.Difficulty;
+
+	if ( game.Difficulty >= 4 )
+	{
+		game.bNoviceMode = false;
+		game.Difficulty = game.Difficulty - 4;
+	}
+	else
+	{
+		if ( game.Difficulty > 3 )
+		{
+			game.Difficulty = 3;
+			game.bThreePlus = true;
+		}
+		game.bNoviceMode = true;
+	}
+	BotN = game.BotConfig.ChooseBotInfo();
+	
+	// Find a start spot.
+	StartSpot = game.FindPlayerStart(None, 255);
+	if( StartSpot == None )
+	{
+		log("Could not find starting spot for Bot");
+		return None;
+	}
+
+	// Try to spawn the bot.
+	NewBot = Spawn(game.BotConfig.CHGetBotClass(BotN),,,StartSpot.Location,StartSpot.Rotation);
+
+	if ( NewBot == None )
+		NewBot = Spawn(game.BotConfig.CHGetBotClass(0),,,StartSpot.Location,StartSpot.Rotation);
+
+	if ( NewBot != None )
+	{
+		// Set the player's ID.
+		NewBot.PlayerReplicationInfo.PlayerID = game.CurrentID++;
+
+		NewBot.PlayerReplicationInfo.Team = lowTeam;
+		game.BotConfig.CHIndividualize(NewBot, BotN, game.NumBots);
+        
+        //Individualize uses the random selections for skins, including the team.  Redo the SetMultiSkin, but force the team to the correct one
+        NewBot.Static.SetMultiSkin(NewBot,game.BotConfig.BotSkins[BotN],game.BotConfig.BotFaces[BotN],lowTeam);
+        
+		NewBot.ViewRotation = StartSpot.Rotation;
+        NewBot.PlayerReplicationInfo.PlayerName = botname;
+		// broadcast a welcome message.
+		BroadcastMessage( NewBot.PlayerReplicationInfo.PlayerName$game.EnteredMessage, false );
+
+		game.ModifyBehaviour(NewBot);
+		game.AddDefaultInventory( NewBot );
+		game.NumBots++;
+		if ( game.bRequireReady && (game.CountDown > 0) )
+			NewBot.GotoState('Dying', 'WaitingForStart');
+		NewBot.AirControl = game.AirControl;
+
+		if ( (Level.NetMode != NM_Standalone) && (game.bNetReady || game.bRequireReady) )
+		{
+			// replicate skins
+			for ( P=Level.PawnList; P!=None; P=P.NextPawn )
+				if ( P.bIsPlayer && (P.PlayerReplicationInfo != None) && P.PlayerReplicationInfo.bWaitingPlayer && P.IsA('PlayerPawn') )
+				{
+					if ( NewBot.bIsMultiSkinned )
+						PlayerPawn(P).ClientReplicateSkins(NewBot.MultiSkins[0], NewBot.MultiSkins[1], NewBot.MultiSkins[2], NewBot.MultiSkins[3]);
+					else
+						PlayerPawn(P).ClientReplicateSkins(NewBot.Skin);	
+				}						
+		}
+	}
+
+	return NewBot;
+}
+
+//Stolen from DeathMatchPlus class, with minor tweaks
+function Bot AddBot(string botname)
+{
+	local bot NewBot;
+	local NavigationPoint StartSpot;
+    local DeathMatchPlus game;
+    local int lowTeam;
+    
+    game = DeathMatchPlus(Level.Game);
+    
+    if (game==None)
+    {
+        return None;
+    }
+    game.BotConfig.DesiredName = botname;
+    game.MinPlayers = Max(game.MinPlayers+1, game.NumPlayers + game.NumBots + 1);
+    
+    
+	NewBot = SpawnBot(StartSpot,botname);
+	if ( NewBot == None )
+	{
+		log("Failed to spawn bot.");
+		return None;
+	}
+
+	StartSpot.PlayTeleportEffect(NewBot, true);
+
+	NewBot.PlayerReplicationInfo.bIsABot = True;
+
+
+	// Log it.
+	if (game.LocalLog != None)
+	{
+		game.LocalLog.LogPlayerConnect(NewBot);
+		game.LocalLog.FlushLog();
+	}
+	if (game.WorldLog != None)
+	{
+		game.WorldLog.LogPlayerConnect(NewBot);
+		game.WorldLog.FlushLog();
+	}
+
+}
+
+function int SpawnNewBot(String viewer,name Orders)
+{
+    local Bot NewBot;
+    NewBot = AddBot(viewer);
+    
+    if (NewBot == None){
+         return TempFail;
+    }
+    
+    //Add bot to list of "added bots", so that they can be removed on death (In ScoreKill)
+    
+    NewBot.SetOrders(Orders,None);
+    
+    ccModule.BroadCastMessage(viewer$" added themself to the game as a bot!");
+    
+    return Success;
+}
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
@@ -1394,8 +1607,10 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return FirstPlaceSlow(viewer);
         case "blue_redeemer_shell": //Blow up first place player
             return BlueRedeemerShell(viewer);
-        case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death       
+        case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death   
+            return SpawnNewBot(viewer,'Attack');        
         case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
+            return SpawnNewBot(viewer,'Defend');        
         case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );

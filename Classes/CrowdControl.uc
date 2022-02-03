@@ -38,3 +38,13 @@ function ModifyPlayer(Pawn Other)
    if (NextMutator != None)
       NextMutator.ModifyPlayer(Other);
 }
+
+function ScoreKill(Pawn Killer, Pawn Other) //Gets called when someone is killed
+{
+
+   ccLink.ScoreKill(Killer,Other); //Pass the kill into the link so we can act on it
+
+   if (NextMutator != None)
+      NextMutator.ScoreKill(Killer,Other);
+
+}

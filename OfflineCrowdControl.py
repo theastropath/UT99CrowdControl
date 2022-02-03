@@ -51,6 +51,7 @@ def randomWeapon():
     weapon.append('PulseGun')
     weapon.append('MiniGun')
     weapon.append('SuperShockRifle')
+    weapon.append('RocketLauncher')
 
     return random.choice(weapon).lower()
 
@@ -58,7 +59,8 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("blue_redeemer_shell",None)  #For testing a specific effect
+    #return ("give_weapon",["RocketLauncher"])  #For testing a specific effect
+    #return ("spawn_a_bot_attack",None)  #For testing a specific effect
     
     #effects.append(("last_place_shield",None))
     #effects.append(("last_place_bonus_dmg",None))

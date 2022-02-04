@@ -839,31 +839,31 @@ function class<Actor> GetAmmoClassByName(String ammoName)
     local class<Actor> ammoClass;
     
     switch(ammoName){
-        case "FlakAmmo":
+        case "flakammo":
             ammoClass = class'FlakAmmo';
             break;
-        case "BioAmmo":
+        case "bioammo":
             ammoClass = class'BioAmmo';
             break;
-        case "WarHeadAmmo":
+        case "warheadammo":
             ammoClass = class'WarHeadAmmo';
             break;
-        case "PAmmo":
+        case "pammo":
             ammoClass = class'PAmmo';
             break;
-        case "ShockCore":
+        case "shockcore":
             ammoClass = class'ShockCore';
             break;
-        case "BladeHopper":
+        case "bladehopper":
             ammoClass = class'BladeHopper';
             break;
-        case "RocketPack":
+        case "rocketpack":
             ammoClass = class'RocketPack';
             break;
-        case "BulletBox":
+        case "bulletbox":
             ammoClass = class'BulletBox';
             break;
-        case "MiniAmmo":
+        case "miniammo":
             ammoClass = class'MiniAmmo';
             break;
         default:
@@ -964,34 +964,34 @@ function class<Weapon> GetWeaponClassByName(String weaponName)
     local class<Weapon> weaponClass;
     
     switch(weaponName){
-        case "Translocator":
+        case "translocator":
             weaponClass = class'Translocator';
             break;
-        case "Ripper":
+        case "ripper":
             weaponClass = class'Ripper';
             break;
         case "WarHeadLauncher":
             weaponClass = class'WarHeadLauncher';
             break;
-        case "BioRifle":
+        case "biorifle":
             weaponClass = class'UT_BioRifle';
             break;
-        case "FlakCannon":
+        case "flakcannon":
             weaponClass = class'UT_FlakCannon';
             break;
-        case "SniperRifle":
+        case "sniperrifle":
             weaponClass = class'SniperRifle';
             break;
-        case "ShockRifle":
+        case "shockrifle":
             weaponClass = class'ShockRifle';
             break;
-        case "PulseGun":
+        case "pulsegun":
             weaponClass = class'PulseGun';
             break;
-        case "MiniGun":
+        case "minigun":
             weaponClass = class'Minigun2';
             break;
-        case "RocketLauncher":
+        case "rocketlauncher":
             weaponClass = class'UT_EightBall';
             break;
         case "SuperShockRifle":
@@ -1260,7 +1260,7 @@ function UpdateAllPawnsSwimState()
     local PlayerPawn p;
     
     foreach AllActors(class'PlayerPawn',p) {
-        ccModule.BroadCastMessage("State before update was "$p.GetStateName());
+        //ccModule.BroadCastMessage("State before update was "$p.GetStateName());
         if (p.Region.Zone.bWaterZone) {
             p.setPhysics(PHYS_Swimming);
 		    p.GotoState('PlayerSwimming');
@@ -1661,7 +1661,7 @@ function Weapon FindSpecificWeaponInPawnInventory(Pawn p,class<Weapon> weaponCla
 
 	for( Link = p; Link!=None; Link=Link.Inventory )
 	{
-		if( Link.Inventory.Class == weaponClass )
+		if( Link.Inventory!= None && Link.Inventory.Class == weaponClass )
 		{
             return Weapon(Link.Inventory);
 		}
@@ -1802,8 +1802,12 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return SpawnNewBot(viewer,'Defend');        
         case "vampire_mode":  //Inflicting damage heals you for the damage dealt (Can grab damage via MutatorTakeDamage)
             return StartVampireMode(viewer);
-        case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed  
+        case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Ammo tops up if run out  
             return ForceWeaponUse(viewer,param[0]);        
+        case "force_instagib": //Give everybody an enhanced shock rifle, then force them to use it for the duration.  Ammo tops up if run out  
+            return ForceWeaponUse(viewer,"SuperShockRifle");        
+        case "force_redeemer": //Give everybody a redeemer, then force them to use it for the duration.  Ammo tops up if run out  
+            return ForceWeaponUse(viewer,"WarHeadLauncher");        
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

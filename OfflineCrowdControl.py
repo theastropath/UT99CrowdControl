@@ -104,6 +104,7 @@ def pickEffect():
     effects.append(("no_ammo",None))
 
     effects.append(("give_weapon",[randomWeapon()]))
+    effects.append(("force_weapon_use",[randomWeapon()]))
     effects.append(("give_ammo",[randomAmmo(),str(random.randint(1,3))]))
 
     effects.append(("nudge",None))
@@ -121,6 +122,9 @@ def pickEffect():
     
     effects.append(("blue_redeemer_shell",None))
     effects.append(("first_place_slow",None))
+    effects.append(("vampire_mode",None))
+    effects.append(("spawn_a_bot_attack",None))
+    effects.append(("spawn_a_bot_defend",None))
     
     effects.append(("give_ammo",[randomAmmo(),random.randint(1,2)]))
 

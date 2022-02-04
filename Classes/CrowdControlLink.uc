@@ -83,6 +83,10 @@ const MaxAddedBots = 10;
 var Bot added_bots[10];
 var int numAddedBots;
 
+var int forceWeaponTimer;
+const ForceWeaponTimerDefault = 60;
+var class<Weapon> forcedWeapon;
+
 
 struct JsonElement
 {
@@ -347,6 +351,12 @@ function Timer() {
         ForceAllPawnsToMelee();
     }
     
+    if (forceWeaponTimer > 0) {
+        TopUpWeaponAmmoAllPawns(forcedWeapon);
+        ForceAllPawnsToSpecificWeapon(forcedWeapon);
+        
+    }
+    
     
     if (ticker%10 != 0) {
         return;
@@ -423,6 +433,14 @@ function Timer() {
         vampireTimer--;
         if (vampireTimer <= 0) {
             ccModule.BroadCastMessage("You no longer feed on the blood of others...");
+        }
+    }  
+    
+    if (forceWeaponTimer > 0) {
+        forceWeaponTimer--;
+        if (forceWeaponTimer <= 0) {
+            ccModule.BroadCastMessage("You can use any weapon again...");
+            forcedWeapon = None;
         }
     }  
    
@@ -1034,7 +1052,7 @@ function int GiveWeapon(String viewer, String weaponName)
     
     foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
         pp = PlayerPawn(p);
-        if (pp!=None && pp.bReadyToPlay==True) { //Don't give weapons to spectators
+        if (pp==None || (pp!=None && pp.bReadyToPlay==True)) { //Don't give weapons to spectators
             GiveWeaponToPawn(p,weaponClass);
         }
     }
@@ -1620,6 +1638,105 @@ function int StartVampireMode(string viewer)
     return Success;
 }
 
+function ForcePawnToSpecificWeapon(Pawn p, class<Weapon> weaponClass)
+{
+    local Weapon specificweapon;
+    
+    if (p.Weapon.Class == weaponClass) {
+        return;  //No need to do a lookup if it's already melee or nothing
+    }
+    
+    specificweapon = FindSpecificWeaponInPawnInventory(p, weaponClass);
+    
+    p.Weapon.GotoState('DownWeapon');
+	p.PendingWeapon = None;
+	p.Weapon = specificweapon;
+	p.Weapon.BringUp();
+}
+
+function Weapon FindSpecificWeaponInPawnInventory(Pawn p,class<Weapon> weaponClass)
+{
+	local actor Link;
+    local Weapon weap;
+
+	for( Link = p; Link!=None; Link=Link.Inventory )
+	{
+		if( Link.Inventory.Class == weaponClass )
+		{
+            return Weapon(Link.Inventory);
+		}
+	}
+    
+    return None;
+}
+
+function TopUpWeaponAmmoAllPawns(class<Weapon> weaponClass)
+{
+    local Pawn p;
+    local PlayerPawn pp;
+    local Weapon w;
+    
+    foreach AllActors(class'Pawn',p) {
+        w=None;
+        w = FindSpecificWeaponInPawnInventory(p,weaponClass);
+        
+        if (w!=None){
+            if (w.AmmoType!=None && w.AmmoType.AmmoAmount==0){
+                w.AmmoType.AddAmmo(w.PickupAmmoCount);
+            }
+        } else {
+            pp = PlayerPawn(p);
+            if (pp==None || (pp!=None && pp.bReadyToPlay==True)) { //Don't give weapons to spectators
+                GiveWeaponToPawn(p,weaponClass);
+            }
+        }
+        
+    }
+
+    
+}
+
+function ForceAllPawnsToSpecificWeapon(class<Weapon> weaponClass)
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        ForcePawnToSpecificWeapon(p, weaponClass);
+    }
+}
+
+
+function int ForceWeaponUse(String viewer, String weaponName)
+{
+    local class<Weapon> weaponClass;
+    local Pawn p;
+    local PlayerPawn pp;
+    local Inventory inv;
+    local Weapon weap;
+    local Actor a;
+
+    if (forceWeaponTimer>0) {
+        return TempFail;
+    }
+
+    
+    weaponClass = GetWeaponClassByName(weaponName);
+    
+    foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
+        pp = PlayerPawn(p);
+        if (pp!=None && pp.bReadyToPlay==True) { //Don't give weapons to spectators
+            GiveWeaponToPawn(p,weaponClass);
+        }
+    }
+    
+    forceWeaponTimer = ForceWeaponTimerDefault;
+    forcedWeapon = weaponClass;
+    
+    ccModule.BroadCastMessage(viewer$" forced everybody to use a specific weapon! ("$weaponName$")");
+    
+    return Success;
+
+}
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
     local int i;
@@ -1685,7 +1802,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return SpawnNewBot(viewer,'Defend');        
         case "vampire_mode":  //Inflicting damage heals you for the damage dealt (Can grab damage via MutatorTakeDamage)
             return StartVampireMode(viewer);
-        case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed      
+        case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Periodic ammo top-ups probably needed  
+            return ForceWeaponUse(viewer,param[0]);        
         default:
             ccModule.BroadCastMessage("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

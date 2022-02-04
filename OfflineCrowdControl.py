@@ -59,7 +59,7 @@ def randomWeapon():
 def pickEffect():
     effects = []
     
-    #return ("give_weapon",["RocketLauncher"])  #For testing a specific effect
+    #return ("force_weapon_use",[randomWeapon()])  #For testing a specific effect
     #return ("spawn_a_bot_attack",None)  #For testing a specific effect
     
     #effects.append(("last_place_shield",None))

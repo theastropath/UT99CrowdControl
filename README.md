@@ -24,4 +24,6 @@ Once installed, start your game (Practice mode, Local Hosting, or on a Dedicated
 Once the IP has been set, the mutator will likely automatically connect on its own.  If not, you can initiate a reconnect by going to the console and using
 
 > mutate cc reconnect
+  
+If you are running the mutator on a different machine than the Crowd Control client (or the offlineCrowdControl script), you may need to ensure that you have port **43384** open for TCP traffic in order for things to work.
 

@@ -1,4 +1,4 @@
-Class UT99CCEffects extends Actor;
+Class UT99CCEffects extends Info;
 
 var UT99CrowdControlLink ccLink;
 

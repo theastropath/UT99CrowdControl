@@ -247,17 +247,13 @@ function RemoveAllArmor(Pawn p)
 	}
 }
 
-function GiveUDamageToPawn(Pawn p)
+function GiveInventoryToPawn(Class<Inventory> className, Pawn p)
 {
-    local UDamage dam;
+    local Inventory inv;
     
-    dam = Spawn(class'UDamage');
-        
-    dam.SetOwner(p);
-    dam.Inventory = p.Inventory;
-    p.Inventory = dam;
-    dam.Activate();
-
+    inv = Spawn(className);
+    inv.Touch(p);
+    inv.Destroy();
 }
 
 function SetAllPlayersFatness(int fatness)
@@ -693,17 +689,6 @@ function Pawn findPawnByScore(bool highest, int avoidTeam)
     return cur;
 }
 
-function GiveShieldBeltToPawn(Pawn p)
-{
-    local UT_ShieldBelt belt;
-    belt = Spawn(class'UT_ShieldBelt');
-        
-    belt.SetOwner(p);
-    belt.Inventory = p.Inventory;
-    p.Inventory = belt;
-    belt.PickupFunction(p);
-}
-
 function int FindTeamWithLeastPlayers()
 {
     local Pawn p;
@@ -968,7 +953,7 @@ function int FullArmour(string viewer)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        GiveShieldBeltToPawn(p);
+        GiveInventoryToPawn(class'UT_ShieldBelt',p);
     }
    
     Broadcast(viewer$" has given everyone a shield belt!");
@@ -1014,7 +999,7 @@ function int GiveDamageItem(String viewer)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        GiveUDamageToPawn(p);
+        GiveInventoryToPawn(class'UDamage',p);
     }
     
     Broadcast(viewer$" gave everyone a damage powerup!");
@@ -1316,7 +1301,7 @@ function int LastPlaceShield(String viewer)
     }
     
     //Actually give them the shield belt
-    GiveShieldBeltToPawn(p);
+    GiveInventoryToPawn(class'UT_ShieldBelt',p);
     
     Broadcast(viewer@"gave a Shield Belt to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
     return Success;
@@ -1332,7 +1317,7 @@ function int LastPlaceDamage(String viewer)
     }
     
     //Actually give them the damage bonus
-    GiveUDamageToPawn(p);
+    GiveInventoryToPawn(class'UDamage',p);
     
     Broadcast(viewer@"gave a Damage Amplifier to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
     return Success;

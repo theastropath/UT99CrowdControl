@@ -689,6 +689,37 @@ function Pawn findPawnByScore(bool highest, int avoidTeam)
     return cur;
 }
 
+function int FindTeamByTeamScore(bool HighTeam)
+{
+    local int i,team;
+    local TeamGamePlus game;
+    team = 0;
+
+    if (Level.Game.bTeamGame==False){
+        return 255;
+    }
+    
+    game = TeamGamePlus(Level.Game);
+    
+    if (game == None){
+        return 255;
+    }
+    
+    for (i=0;i<4;i++) {
+        if (HighTeam) {
+            if (game.Teams[i].Score > game.Teams[team].Score){
+                team = i;
+            }
+        } else {
+            if (game.Teams[i].Score < game.Teams[team].Score){
+                team = i;
+            }        
+        }
+    }
+    
+    return team;
+}
+
 function int FindTeamWithLeastPlayers()
 {
     local Pawn p;
@@ -724,6 +755,7 @@ function Bot SpawnBot(out NavigationPoint StartSpot, String botname)
 	local Pawn P;
     local DeathMatchPlus game;
     local int lowTeam;
+    local float skill;
     
     game = DeathMatchPlus(Level.Game);
     
@@ -733,6 +765,9 @@ function Bot SpawnBot(out NavigationPoint StartSpot, String botname)
     }
     
     lowTeam = FindTeamWithLeastPlayers();
+    
+    //Adjust skill based on whether or not the bot is going on the winning team
+    skill = game.BotConfig.Difficulty; //TODO: Actually adjust this difficulty
 
 
 	game.Difficulty = game.BotConfig.Difficulty;
@@ -774,6 +809,8 @@ function Bot SpawnBot(out NavigationPoint StartSpot, String botname)
 
 		NewBot.PlayerReplicationInfo.Team = lowTeam;
 		game.BotConfig.CHIndividualize(NewBot, BotN, game.NumBots);
+        
+        NewBot.InitializeSkill(skill);
         
         //Individualize uses the random selections for skins, including the team.  Redo the SetMultiSkin, but force the team to the correct one
         NewBot.Static.SetMultiSkin(NewBot,game.BotConfig.BotSkins[BotN],game.BotConfig.BotFaces[BotN],lowTeam);
@@ -1356,7 +1393,7 @@ function int BlueRedeemerShell(String viewer)
     local int avoidTeam;
     
     
-    high = findPawnByScore(True,255);  //Target individual player who is doing best
+    high = findPawnByScore(True,FindTeamByTeamScore(False));  //Target individual player who is doing best on a team that isn't in last place
     
     if (Level.Game.bTeamGame==True){
         avoidTeam = high.PlayerReplicationInfo.Team;

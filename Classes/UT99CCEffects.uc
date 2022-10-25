@@ -214,7 +214,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
     
     //Check if vampire mode timer is running, and if it is, do the vampire thing
     //Don't allow healing off of damage to yourself
-    if (vampireTimer > 0 && Victim!=InstigatedBy) {
+    if (vampireTimer > 0 && InstigatedBy!=None && Victim!=InstigatedBy) {
         InstigatedBy.Health += (ActualDamage/2); //Don't heal the full amount of damage
         
         //Don't let it overheal
@@ -323,7 +323,9 @@ function Pawn findRandomPawn()
     num = 0;
     
     foreach AllActors(class'Pawn',p) {
-        pawns[num++] = p;
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            pawns[num++] = p;
+        }
     }
 
     if( num == 0 ) return None;
@@ -596,7 +598,9 @@ function ForceAllPawnsToMelee()
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        ForcePawnToMeleeWeapon(p);
+        if (!p.IsA('StationaryPawn')){
+            ForcePawnToMeleeWeapon(p);
+        }
     }
 }
 
@@ -641,13 +645,15 @@ function UpdateAllPawnsSwimState()
     
     foreach AllActors(class'PlayerPawn',p) {
         //Broadcast("State before update was "$p.GetStateName());
-        if (p.Region.Zone.bWaterZone) {
-            p.setPhysics(PHYS_Swimming);
-		    p.GotoState('PlayerSwimming');
-        } else {
-            p.setPhysics(PHYS_Falling);
-		    p.GotoState('PlayerWalking');
-        
+        if (p.Health>0){
+            if (p.Region.Zone.bWaterZone) {
+                p.setPhysics(PHYS_Swimming);
+                p.GotoState('PlayerSwimming');
+            } else {
+                p.setPhysics(PHYS_Falling);
+                p.GotoState('PlayerWalking');
+            
+            }
         }
     }
 
@@ -665,6 +671,9 @@ function Pawn findPawnByScore(bool highest, int avoidTeam)
     
     cur = None;
     foreach AllActors(class'Pawn',p) {
+        if (p.IsA('StationaryPawn')){
+            continue; //Skip turrets and things like that
+        }
         //Broadcast(p.PlayerReplicationInfo.PlayerName$" is on team "$p.PlayerReplicationInfo.Team);
         if (cur==None){
             if (avoid==False || (avoid==True && p.PlayerReplicationInfo.Team!=avoidTeam)) {
@@ -734,7 +743,9 @@ function int FindTeamWithLeastPlayers()
     }
     
     foreach AllActors(class'Pawn',p) {
-        pCount[p.PlayerReplicationInfo.Team]++;
+        if (!p.IsA('StationaryPawn')){
+            pCount[p.PlayerReplicationInfo.Team]++;
+        }
     }
     
     for (i = 0; i < 256;i++){        
@@ -929,6 +940,9 @@ function TopUpWeaponAmmoAllPawns(class<Weapon> weaponClass)
     local Weapon w;
     
     foreach AllActors(class'Pawn',p) {
+        if (p.IsA('StationaryPawn')){
+            continue;
+        }
         w=None;
         w = FindSpecificWeaponInPawnInventory(p,weaponClass);
         
@@ -958,8 +972,10 @@ function int SuddenDeath(string viewer)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        p.Health = 1;
-        RemoveAllArmor(p);
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            p.Health = 1;
+            RemoveAllArmor(p);
+        }
     }
     
     Broadcast(viewer$" has initiated sudden death!  All health reduced to 1, no armour!");
@@ -972,9 +988,11 @@ function int FullHeal(string viewer)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        //Don't reduce health if someone is overhealed
-        if (p.Health < 100) {
-            p.Health = 100;
+        if (p.Health>0){
+            //Don't reduce health if someone is overhealed
+            if (p.Health < 100) {
+                p.Health = 100;
+            }
         }
     }
     
@@ -1003,7 +1021,9 @@ function int GiveHealth(string viewer,int amount)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        p.Health = Min(p.Health + amount,199); //Let's allow this to overheal, up to 199
+        if (p.Health>0){
+            p.Health = Min(p.Health + amount,199); //Let's allow this to overheal, up to 199
+        }
     }
     
     Broadcast("Everyone has been given "$amount$" health by "$viewer$"!");
@@ -1114,6 +1134,9 @@ function int ThanosSnap(String viewer)
     Level.Game.SpecialDamageString = "%o got snapped by "$viewer;
     
     foreach AllActors(class'Pawn',p) {
+        if (p.IsA('StationaryPawn')){
+            continue;
+        }
         if (Rand(2)==0){ //50% chance of death
             P.TakeDamage
             (
@@ -1175,7 +1198,9 @@ function int NoAmmo(String viewer)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        RemoveAllAmmoFromPawn(p);
+        if (!p.IsA('StationaryPawn')){
+            RemoveAllAmmoFromPawn(p);
+        }
     }
     
     Broadcast(viewer$" stole all your ammo!");
@@ -1241,6 +1266,9 @@ function int DropSelectedWeapon(string viewer) {
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
+        if (p.IsA('StationaryPawn')){
+            continue;
+        }
         if (IsWeaponRemovable(p.Weapon)){
             p.DeleteInventory(p.Weapon);
         }
@@ -1477,7 +1505,9 @@ function ForceAllPawnsToSpecificWeapon(class<Weapon> weaponClass)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        ForcePawnToSpecificWeapon(p, weaponClass);
+        if (!p.IsA('StationaryPawn')){
+            ForcePawnToSpecificWeapon(p, weaponClass);
+        }
     }
 }
 

@@ -6,9 +6,9 @@ using ConnectorType = CrowdControl.Common.ConnectorType;
 
 public class UnrealTournament99 : SimpleTCPPack
 {
-    public override string Host { get; } = "0.0.0.0";
+    public override string Host => "0.0.0.0";
 
-    public override ushort Port { get; } = 43384;
+    public override ushort Port => 43384;
 
     public UnrealTournament99(IPlayer player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler) { }
 

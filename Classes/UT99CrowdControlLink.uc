@@ -11,6 +11,8 @@ var int reconnectTimer;
 var string pendingMsg;
 var bool enabled;
 
+var string version;
+
 const Success = 0;
 const Failed = 1;
 const NotAvail = 2;
@@ -23,6 +25,9 @@ const ReconDefault = 5;
 
 function Init(CrowdControl cc, string addr)
 {
+    
+    //UPDATE VERSION EACH RELEASE!
+    version = "v1.1.0";
     
     ccModule = cc;
     crowd_control_addr = addr; 
@@ -195,7 +200,7 @@ function ManualReceiveBinary() {
     
 }
 event Opened(){
-    ccModule.BroadCastMessage("Crowd Control connection opened");
+    ccModule.BroadCastMessage("Crowd Control ("$version$") connection opened");
 }
 
 event Closed(){

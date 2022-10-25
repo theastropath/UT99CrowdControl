@@ -191,12 +191,21 @@ function ContinuousUpdates()
 function ScoreKill(Pawn Killer,Pawn Other)
 {
     local int i;
+    local DeathMatchPlus game;
+
+    game = DeathMatchPlus(Level.Game);
+
     //Broadcast(Killer.PlayerReplicationInfo.PlayerName$" just killed "$Other.PlayerReplicationInfo.PlayerName);
     
     //Check if the killed pawn is a bot that we don't want to respawn
     for (i=0;i<MaxAddedBots;i++){
         if (added_bots[i]!=None && added_bots[i]==Other) {
             added_bots[i]=None;
+            if (game!=None)
+            {
+                game.MinPlayers = Max(game.MinPlayers-1, game.NumPlayers + game.NumBots - 1);
+            }
+
             //Broadcast("Should be destroying added bot "$Other.PlayerReplicationInfo.PlayerName);
             Broadcast("Crowd Control viewer "$Other.PlayerReplicationInfo.PlayerName$" has left the match");
             Other.SpawnGibbedCarcass();

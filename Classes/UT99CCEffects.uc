@@ -233,6 +233,7 @@ function ScoreKill(Pawn Killer,Pawn Other)
             Broadcast("Crowd Control viewer "$Other.PlayerReplicationInfo.PlayerName$" has left the match");
             Other.SpawnGibbedCarcass();
             Other.Destroy(); //This may cause issues if there are more mutators caring about ScoreKill.  Probably should schedule this deletion for later instead...
+            break;
         }
     }    
 }
@@ -967,11 +968,10 @@ function Weapon FindSpecificWeaponInPawnInventory(Pawn p,class<Weapon> weaponCla
 function TopUpWeaponAmmoAllPawns(class<Weapon> weaponClass)
 {
     local Pawn p;
-    local PlayerPawn pp;
     local Weapon w;
     
     foreach AllActors(class'Pawn',p) {
-        if (p.IsA('StationaryPawn')){
+        if (p.IsA('StationaryPawn') || p.IsA('Spectator') || p.Health<=0){
             continue;
         }
         w=None;
@@ -982,10 +982,7 @@ function TopUpWeaponAmmoAllPawns(class<Weapon> weaponClass)
                 w.AmmoType.AddAmmo(w.PickupAmmoCount);
             }
         } else {
-            pp = PlayerPawn(p);
-            if (pp==None || (pp!=None && pp.bReadyToPlay==True)) { //Don't give weapons to spectators
-                GiveWeaponToPawn(p,weaponClass);
-            }
+            GiveWeaponToPawn(p,weaponClass);
         }
         
     }
@@ -1317,7 +1314,6 @@ function int GiveWeapon(String viewer, String weaponName)
 {
     local class<Weapon> weaponClass;
     local Pawn p;
-    local PlayerPawn pp;
     local Inventory inv;
     local Weapon weap;
     local Actor a;
@@ -1325,10 +1321,10 @@ function int GiveWeapon(String viewer, String weaponName)
     weaponClass = GetWeaponClassByName(weaponName);
     
     foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
-        pp = PlayerPawn(p);
-        if (pp==None || (pp!=None && pp.bReadyToPlay==True)) { //Don't give weapons to spectators
-            GiveWeaponToPawn(p,weaponClass);
+        if (p.IsA('StationaryPawn') || p.IsA('Spectator') || p.Health<=0){
+            continue;
         }
+        GiveWeaponToPawn(p,weaponClass);
     }
     
     Broadcast(viewer$" gave everybody a weapon! ("$weaponName$")");
@@ -1536,7 +1532,7 @@ function ForceAllPawnsToSpecificWeapon(class<Weapon> weaponClass)
     local Pawn p;
     
     foreach AllActors(class'Pawn',p) {
-        if (!p.IsA('StationaryPawn')){
+        if (!p.IsA('StationaryPawn') && p.Health>0){
             ForcePawnToSpecificWeapon(p, weaponClass);
         }
     }
@@ -1560,10 +1556,11 @@ function int ForceWeaponUse(String viewer, String weaponName)
     weaponClass = GetWeaponClassByName(weaponName);
     
     foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
-        pp = PlayerPawn(p);
-        if (pp!=None && pp.bReadyToPlay==True) { //Don't give weapons to spectators
-            GiveWeaponToPawn(p,weaponClass);
+        if (p.IsA('StationaryPawn') || p.IsA('Spectator') || p.Health<=0){
+            continue;
         }
+        GiveWeaponToPawn(p,weaponClass);
+        
     }
     
     forceWeaponTimer = ForceWeaponTimerDefault;

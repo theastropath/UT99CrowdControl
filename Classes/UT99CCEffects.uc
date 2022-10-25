@@ -70,11 +70,15 @@ struct ZoneWater
 };
 var ZoneWater zone_waters[32];
 
+var int cfgMinPlayers;
 
 
 function Init(UT99CrowdControlLink crowd_control_link)
 {
     local int i;
+    local DeathMatchPlus game;
+
+    game = DeathMatchPlus(Level.Game);
     
     ccLink = crowd_control_link;
     
@@ -85,6 +89,12 @@ function Init(UT99CrowdControlLink crowd_control_link)
     for (i=0;i<MaxAddedBots;i++){
         added_bots[i]=None;
     }
+
+    if (game!=None)
+    {
+        cfgMinPlayers = game.MinPlayers;
+    }
+    
 }
 
 function Broadcast(string msg)
@@ -174,6 +184,10 @@ function PeriodicUpdates()
 //Updates every tenth of a second
 function ContinuousUpdates()
 {
+    local DeathMatchPlus game;
+    
+    game = DeathMatchPlus(Level.Game);
+    
     //Want to force people to melee more frequently than once a second
     if (meleeTimer > 0) {
         ForceAllPawnsToMelee();
@@ -182,6 +196,14 @@ function ContinuousUpdates()
     if (forceWeaponTimer > 0) {
         TopUpWeaponAmmoAllPawns(forcedWeapon);
         ForceAllPawnsToSpecificWeapon(forcedWeapon);  
+    }
+    
+    if (game!=None){
+        if (numAddedBots==0 || Level.Game.bGameEnded){
+            game.MinPlayers = cfgMinPlayers;
+        } else {
+            game.MinPlayers = Max(cfgMinPlayers+numAddedBots, game.NumPlayers + numAddedBots);
+        }
     }
 }
 
@@ -201,16 +223,16 @@ function ScoreKill(Pawn Killer,Pawn Other)
     for (i=0;i<MaxAddedBots;i++){
         if (added_bots[i]!=None && added_bots[i]==Other) {
             added_bots[i]=None;
+            numAddedBots--;
             if (game!=None)
             {
-                game.MinPlayers = Max(game.MinPlayers-1, game.NumPlayers + game.NumBots - 1);
+                game.MinPlayers = Max(cfgMinPlayers+numAddedBots, game.NumPlayers + game.NumBots - 1);
             }
 
             //Broadcast("Should be destroying added bot "$Other.PlayerReplicationInfo.PlayerName);
             Broadcast("Crowd Control viewer "$Other.PlayerReplicationInfo.PlayerName$" has left the match");
             Other.SpawnGibbedCarcass();
             Other.Destroy(); //This may cause issues if there are more mutators caring about ScoreKill.  Probably should schedule this deletion for later instead...
-            numAddedBots--;
         }
     }    
 }

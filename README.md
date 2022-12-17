@@ -32,6 +32,11 @@ If you are running the mutator on a different machine than the Crowd Control cli
 
 Epic has taken their master servers offline, which would prevent players from finding online multiplayer games.  Luckily, the community has their own master servers ready to go!  While the server can be configured manually, the simplest solution is probably to install the [OldUnreal Unreal Tournament 99 patch](https://github.com/OldUnreal/UnrealTournamentPatches/releases), since that also fixes other issues at the same time.
 
+
+## Where to Buy
+
+At the same time as taking their master servers offline, Epic also removed Unreal Tournament from sale on Steam.  Luckily, [it seems to still be available on GOG](https://www.gog.com/en/game/unreal_tournament_goty) as "Unreal Tournament GOTY".
+
 ## Feedback
   
 Join the Discord server to discuss this mod or to provide feedback: https://discord.gg/GYqqDdAzzW

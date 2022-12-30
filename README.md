@@ -35,7 +35,7 @@ Epic has taken their master servers offline, which would prevent players from fi
 
 ## Where to Buy
 
-At the same time as taking their master servers offline, Epic also removed Unreal Tournament from sale on Steam.  Luckily, [it seems to still be available on GOG](https://www.gog.com/en/game/unreal_tournament_goty) as "Unreal Tournament GOTY".
+Good luck!  Epic removed the game for sale from everywhere that I'm aware of.
 
 ## Feedback
   

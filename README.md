@@ -17,7 +17,13 @@ Either compile the .u file or download it from the Releases page and put it alon
 
 ## Usage
 
-Once installed, start your game (Practice mode, "Crowd Control Tournament" through the Mods menu, Local Hosting, or on a Dedicated Server).  The "Start Unreal Tournament" option in the menu won't have Crowd Control, but you can use the "Start Crowd Control Tournament" option under the mods menu to play the campaign with Crowd Control.
+Once installed, start your game (Practice mode, "Crowd Control Tournament" through the Mods menu, Local Hosting, or on a Dedicated Server).  The "Start Unreal Tournament" option in the menu won't have Crowd Control, but you can use the "Start Crowd Control Tournament" option under the mods menu to play the campaign with Crowd Control.  If playing a practice game or hosting a server, make sure to enable the "Crowd Control support for UT99" mutator.
+
+Single Player Campaign:
+![CrowdControlTournament](https://user-images.githubusercontent.com/13684088/210175207-f7ad8f07-42f5-4c2a-87ec-d6f3bd288902.png)
+
+Practice mode or hosting a server:
+![CrowdControlMutator](https://user-images.githubusercontent.com/13684088/210175358-bd6ad463-c6ba-4ce2-812d-b32e757b59c7.png) 
 
 If you are playing a local game or running the server on the same computer as Crowd Control, the mutator will be able to connect without any additional configuration.
 
@@ -30,7 +36,6 @@ Once the IP has been set, the mutator will likely automatically connect on its o
 > mutate cc reconnect
   
 If you are running the mutator on a different machine than the Crowd Control client (or the offlineCrowdControl script), you may need to ensure that you have port **43384** open for TCP traffic in order for things to work.
-
 
 ## Online Multiplayer
 

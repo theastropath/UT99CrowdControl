@@ -17,7 +17,11 @@ Either compile the .u file or download it from the Releases page and put it alon
 
 ## Usage
 
-Once installed, start your game (Practice mode, Local Hosting, or on a Dedicated Server).  Once started, log in as an admin (Go to console and use "adminlogin <adminpassword>").  Once logged in, you can configure the IP where the Crowd Control client (or OfflineCrowdControl script) is running.  To do this, go to the console and type
+Once installed, start your game (Practice mode, "Crowd Control Tournament" through the Mods menu, Local Hosting, or on a Dedicated Server).  The "Start Unreal Tournament" option in the menu won't have Crowd Control, but you can use the "Start Crowd Control Tournament" option under the mods menu to play the campaign with Crowd Control.
+
+If you are playing a local game or running the server on the same computer as Crowd Control, the mutator will be able to connect without any additional configuration.
+
+If you are running the Crowd Control client on a different machine than the server (eg. you are using a dedicated server), you will need to tell the server where your Crowd Control client is.  Log in as an admin on your server (Go to console and use "adminlogin <adminpassword>").  Once logged in, you can configure the IP where the Crowd Control client (or OfflineCrowdControl script) is running.  To do this, go to the console and type
 
 > mutate cc setip <ip-address-where-crowd-control-is-running>
 

@@ -311,7 +311,6 @@ function Swap(Actor a, Actor b)
 {
     local vector newloc, oldloc;
     local rotator newrot;
-    local bool asuccess, bsuccess;
     local Actor abase, bbase;
     local bool AbCollideActors, AbBlockActors, AbBlockPlayers;
     local EPhysics aphysics, bphysics;
@@ -893,7 +892,6 @@ function Bot AddBot(string botname)
 	local bot NewBot;
 	local NavigationPoint StartSpot;
     local DeathMatchPlus game;
-    local int lowTeam;
     
     game = DeathMatchPlus(Level.Game);
     
@@ -952,7 +950,6 @@ function ForcePawnToSpecificWeapon(Pawn p, class<Weapon> weaponClass)
 function Weapon FindSpecificWeaponInPawnInventory(Pawn p,class<Weapon> weaponClass)
 {
 	local actor Link;
-    local Weapon weap;
 
 	for( Link = p; Link!=None; Link=Link.Inventory )
 	{
@@ -1271,7 +1268,6 @@ function int GiveAmmo(String viewer, String ammoName, int amount)
 }
 
 function int doNudge(string viewer) {
-    local Rotator r;
     local vector newAccel;
     local Pawn p;
     
@@ -1314,10 +1310,7 @@ function int GiveWeapon(String viewer, String weaponName)
 {
     local class<Weapon> weaponClass;
     local Pawn p;
-    local Inventory inv;
-    local Weapon weap;
-    local Actor a;
-    
+
     weaponClass = GetWeaponClassByName(weaponName);
     
     foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
@@ -1328,6 +1321,8 @@ function int GiveWeapon(String viewer, String weaponName)
     }
     
     Broadcast(viewer$" gave everybody a weapon! ("$weaponName$")");
+    
+    return Success;
 }
 
 
@@ -1543,10 +1538,6 @@ function int ForceWeaponUse(String viewer, String weaponName)
 {
     local class<Weapon> weaponClass;
     local Pawn p;
-    local PlayerPawn pp;
-    local Inventory inv;
-    local Weapon weap;
-    local Actor a;
 
     if (forceWeaponTimer>0) {
         return TempFail;
@@ -1580,7 +1571,6 @@ function int ForceWeaponUse(String viewer, String weaponName)
 
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
-    local int i;
 
     switch(code) {
         case "sudden_death":  //Everyone loses all armour and goes down to one health

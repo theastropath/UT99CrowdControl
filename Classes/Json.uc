@@ -114,7 +114,7 @@ static function string Start(string type)
     return "{\"type\":\"" $ type $ "\"";
 }
 
-static function string Add(out string j, coerce string key, coerce string value)
+static function Add(out string j, coerce string key, coerce string value)
 {
     j = j $ ",\"" $ key $ "\":\"" $ value $ "\"";
 }
@@ -135,7 +135,7 @@ const KeyState = 1;
 const ValState = 2;
 const ArrayState = 3;
 const ArrayDoneState = 4;
-const EndState = 5;
+const EndingState = 5;
 
 function _parse(string msg) {
     ParseJson(msg);
@@ -242,7 +242,7 @@ function int ParseKey(string msg, out int i, out IntPair p, out int inBraces) {
         case "}":
             inBraces--;
             if(inBraces <= 0)
-                return EndState;
+                return EndingState;
 
         case "]":
             _buf = _buf $ c;
@@ -294,7 +294,7 @@ function int ParseVal(string msg, out int i, out IntPair p, out int inBraces) {
                 j.e[j.count].value[j.e[j.count].valCount] = p;
                 j.e[j.count].valCount++;
                 j.count++;
-                return EndState;
+                return EndingState;
             }
             break;
 
@@ -388,7 +388,7 @@ function int ParseArrayDone(string msg, out int i, out IntPair p, out int inBrac
         case "}":
             inBraces--;
             if(inBraces <= 0)
-                return EndState;
+                return EndingState;
 
         default:
             //Build up the buffer
@@ -460,7 +460,7 @@ function ParseJson(string msg) {
         case ArrayDoneState:
             parsestate = ParseArrayDone(msg, i, p, inBraces);
             break;
-        case EndState:
+        case EndingState:
             return;
         }
     }

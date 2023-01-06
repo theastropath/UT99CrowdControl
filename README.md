@@ -45,6 +45,7 @@ ServerPackages=UT99CrowdControl
 
 Once added, players that join your game will be able to see the time remaining on any active Crowd Control effects.
 
+![CrowdControlServerPackages](https://user-images.githubusercontent.com/13684088/210919471-29fa42d1-e476-4ffd-849f-6fadd1f7f4da.png)
 ## Online Multiplayer
 
 Epic has taken their master servers offline, which would prevent players from finding online multiplayer games.  Luckily, the community has their own master servers ready to go!  While the server can be configured manually, the simplest solution is probably to install the [OldUnreal Unreal Tournament 99 patch](https://github.com/OldUnreal/UnrealTournamentPatches/releases), since that also fixes other issues at the same time.

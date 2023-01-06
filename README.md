@@ -37,15 +37,6 @@ Once the IP has been set, the mutator will likely automatically connect on its o
   
 If you are running the mutator on a different machine than the Crowd Control client (or the offlineCrowdControl script), you may need to ensure that you have port **43384** open for TCP traffic in order for things to work.
 
-## Multiplayer HUD
-
-While the new HUD elements for showing the active effects will work without any changes in singleplayer games, it won't show up in multiplayer without adding the package to your ServerPackages.  To do so, open your UnrealTournament.ini file (in your system folder) and find the section with a list of packages starting with "ServerPackages=" (In the "[Engine.GameEngine]" section).  Add a new line to the end of that list that says:
-
-ServerPackages=UT99CrowdControl
-
-Once added, players that join your game will be able to see the time remaining on any active Crowd Control effects.
-
-![CrowdControlServerPackages](https://user-images.githubusercontent.com/13684088/210919471-29fa42d1-e476-4ffd-849f-6fadd1f7f4da.png)
 ## Online Multiplayer
 
 Epic has taken their master servers offline, which would prevent players from finding online multiplayer games.  Luckily, the community has their own master servers ready to go!  While the server can be configured manually, the simplest solution is probably to install the [OldUnreal Unreal Tournament 99 patch](https://github.com/OldUnreal/UnrealTournamentPatches/releases), since that also fixes other issues at the same time.

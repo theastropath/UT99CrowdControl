@@ -4,8 +4,20 @@ var bool initialized;
 var UT99CrowdControlLink ccLink;
 var config string crowd_control_addr;
 
+var UT99CCHudSpawnNotify sn;
+
+replication
+{
+    reliable if (Role==ROLE_Authority)
+        sn;
+}
+
 function InitCC()
 {
+    if (Role!=ROLE_Authority)
+    {
+        return;
+    }
     if (initialized==True)
     {
         return;
@@ -24,12 +36,15 @@ function InitCC()
     initialized = True;
 }
 
-function PreBeginPlay()
+simulated function PreBeginPlay()
 {
    initialized = False;
    InitCC();
    Level.Game.RegisterDamageMutator(self);
+   sn=Spawn(class'UT99CrowdControl.UT99CCHudSpawnNotify');
+
 }
+
 
 function ModifyPlayer(Pawn Other)
 {
@@ -39,6 +54,7 @@ function ModifyPlayer(Pawn Other)
    if (NextMutator != None)
       NextMutator.ModifyPlayer(Other);
 }
+
 
 function ScoreKill(Pawn Killer, Pawn Other) //Gets called when someone is killed
 {
@@ -193,4 +209,25 @@ function Mutate (string MutateString, PlayerPawn Sender)
     
     if ( NextMutator != None )
 		NextMutator.Mutate(MutateString, Sender);
+}
+
+function SendCCMessage(string msg)
+{
+    local PlayerPawn p;
+    local color c;
+    
+    c.R=0;
+    c.G=255;
+    c.B=0;
+
+    foreach AllActors(class'PlayerPawn',p){
+        p.ClearProgressMessages();
+        p.SetProgressTime(4);
+        p.SetProgressColor(c,0);
+        p.SetProgressMessage(msg,0);
+    }
+}
+
+defaultproperties
+{
 }

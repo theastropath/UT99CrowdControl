@@ -142,7 +142,7 @@ while True:
         print("Connected to ",addr)
         while True:
             #conn.send(x)
-            time.sleep(random.randint(30,40))
+            time.sleep(random.randint(5,10))
             effect = pickEffect()
             if effect!=None:
                 msg = genMsg(effect[0],effect[1])

@@ -72,6 +72,14 @@ var ZoneWater zone_waters[32];
 
 var int cfgMinPlayers;
 
+var bool bFat,bFast;
+var string targetPlayer;
+
+replication
+{
+    reliable if ( Role == ROLE_Authority )
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,targetPlayer,GetEffectList;
+}
 
 function Init(UT99CrowdControlLink crowd_control_link)
 {
@@ -100,8 +108,69 @@ function Init(UT99CrowdControlLink crowd_control_link)
 function Broadcast(string msg)
 {
     ccLink.ccModule.BroadCastMessage(msg);
+    ccLink.ccModule.SendCCMessage(msg);
 }
 
+
+simulated function GetEffectList(out string effects[15], out int numEffects)
+{
+    local int i;
+
+    if (behindTimer > 0) {
+        effects[i]="Third-Person: "$behindTimer;
+        i++;
+    }
+    if (fatnessTimer > 0) {
+        if(bFat){
+            effects[i]="Full Fat: "$fatnessTimer;
+        } else {
+            effects[i]="Skin and Bones: "$fatnessTimer;
+        }
+        i++;
+    }
+    if (speedTimer > 0) {
+        if(bFast){
+            effects[i]="Gotta Go Fast: "$speedTimer;
+        } else {
+            effects[i]="Gotta Go Slow";
+            if (targetPlayer!=""){
+                effects[i]=effects[i]$" ("$targetPlayer$")";
+            }
+            effects[i]=effects[i]$": "$speedTimer;
+        }
+        i++;
+    }
+    if (iceTimer > 0) {
+        effects[i]="Ice Physics: "$iceTimer;
+        i++;
+    }
+    if (gravityTimer > 0) {
+        effects[i]="Low-Grav: "$gravityTimer;
+        i++;
+    }
+    if (meleeTimer > 0) {
+        effects[i]="Melee-Only: "$meleeTimer;
+        i++;
+    }
+    if (floodTimer > 0) {
+        effects[i]="Flood: "$floodTimer;
+        i++;
+    }
+    if (vampireTimer > 0) {
+        effects[i]="Vampire: "$vampireTimer;
+        i++;
+    }
+    if (forceWeaponTimer > 0) {
+        effects[i]="Forced "$forcedWeapon.default.ItemName$": "$forceWeaponTimer;
+        i++;
+    }
+    if (numAddedBots > 0) {
+        effects[i]="Added Bots: "$numAddedBots;
+        i++;
+    }
+
+    numEffects=i;
+}
 
 //One Second timer updates
 function PeriodicUpdates()
@@ -269,14 +338,16 @@ function RemoveAllArmor(Pawn p)
 
 	for( Link = p; Link!=None; Link=Link.Inventory )
 	{
-		if( Link.Inventory.bIsAnArmor )
-		{
-            armor = Link.Inventory;
-			Link.Inventory = Link.Inventory.Inventory;
-            armor.SetOwner(None);
-            armor.Destroy();
-		}
-	}
+            if( Link.Inventory!=None && Link.Inventory.bIsAnArmor )
+            {
+                armor = Link.Inventory;
+                if(Link.Inventory!=None){
+                    Link.Inventory = Link.Inventory.Inventory;
+                }
+                armor.SetOwner(None);
+                armor.Destroy();
+            }
+    }
 }
 
 function GiveInventoryToPawn(Class<Inventory> className, Pawn p)
@@ -421,6 +492,9 @@ function AddItemToPawnInventory(Pawn p, Inventory item)
 
 function bool IsWeaponRemovable(Weapon w)
 {
+    if (w==None){
+        return False;
+    }
     switch(w.Class){
         case class'Translocator':
         case class'ImpactHammer':
@@ -1004,7 +1078,7 @@ function int SuddenDeath(string viewer)
     }
     
     Broadcast(viewer$" has initiated sudden death!  All health reduced to 1, no armour!");
-    
+
     return Success;
 }
 
@@ -1022,7 +1096,7 @@ function int FullHeal(string viewer)
     }
     
     Broadcast("Everyone has been fully healed by "$viewer$"!");
-    
+  
     return Success;
 
 }
@@ -1037,7 +1111,7 @@ function int FullArmour(string viewer)
     }
    
     Broadcast(viewer$" has given everyone a shield belt!");
-    
+   
     return Success;
 }
 
@@ -1071,7 +1145,7 @@ function int ThirdPerson(String viewer)
     behindTimer = BehindTimerDefault;
 
     Broadcast(viewer$" wants you to have an out of body experience!");
-    
+  
     return Success;
 
 }
@@ -1085,7 +1159,7 @@ function int GiveDamageItem(String viewer)
     }
     
     Broadcast(viewer$" gave everyone a damage powerup!");
-    
+   
     return Success;
 }
 
@@ -1098,9 +1172,9 @@ function int FullFat(String viewer)
     SetAllPlayersFatness(255);
       
     fatnessTimer = FatnessTimerDefault;
-
+    bFat=True;
     Broadcast(viewer$" fattened everybody up!");
-    
+ 
     return Success;
 }
 
@@ -1113,9 +1187,9 @@ function int SkinAndBones(String viewer)
     SetAllPlayersFatness(1);
 
     fatnessTimer = FatnessTimerDefault;
-
+    bFat=False;
     Broadcast(viewer$" made everyone really skinny!");
-    
+   
     return Success;
 }
 
@@ -1129,9 +1203,10 @@ function int GottaGoFast(String viewer)
     SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed * 3);
 
     speedTimer = SpeedTimerDefault;
-
+    bFast=True;
+    targetPlayer="";
     Broadcast(viewer$" made everyone fast like Sonic!");
-    
+   
     return Success;   
 }
 
@@ -1144,9 +1219,10 @@ function int GottaGoSlow(String viewer)
     SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed / 3);
 
     speedTimer = SlowTimerDefault;
-
+    bFast=False;
+    targetPlayer="";
     Broadcast(viewer$" made everyone slow like a snail!");
-    
+   
     return Success;   
 }
 
@@ -1177,7 +1253,7 @@ function int ThanosSnap(String viewer)
     Level.Game.SpecialDamageString = origDamageString;
     
     Broadcast(viewer$" snapped their fingers!");
-    
+  
     return Success;
 
 }
@@ -1213,7 +1289,7 @@ function int swapPlayer(string viewer) {
     }
     
     Broadcast(viewer@"thought "$a.PlayerReplicationInfo.PlayerName$" would look better if they were where"@b.PlayerReplicationInfo.PlayerName@"was");
-    
+
     return Success;
 }
 
@@ -1262,8 +1338,8 @@ function int GiveAmmo(String viewer, String ammoName, int amount)
         }
     }
     
-    Broadcast(viewer$" gave everybody some ammo! ("$ammoName$")");
-    
+    Broadcast(viewer$" gave everybody some ammo! ("$class<ammo>(ammoClass).default.ItemName$")");
+
     return Success;
 }
 
@@ -1282,6 +1358,7 @@ function int doNudge(string viewer) {
     }
         
     Broadcast(viewer@"nudged you a little bit");
+
     return Success;
 }
 
@@ -1299,7 +1376,7 @@ function int DropSelectedWeapon(string viewer) {
     }
     
     Broadcast(viewer$" stole your current weapon!");
-    
+   
     return Success;
 
 }
@@ -1320,8 +1397,8 @@ function int GiveWeapon(String viewer, String weaponName)
         GiveWeaponToPawn(p,weaponClass);
     }
     
-    Broadcast(viewer$" gave everybody a weapon! ("$weaponName$")");
-    
+    Broadcast(viewer$" gave everybody a weapon! ("$weaponClass.default.ItemName$")");
+  
     return Success;
 }
 
@@ -1335,6 +1412,7 @@ function int EnableIcePhysics(string viewer)
     Broadcast(viewer@"made the ground freeze!");
     SetIcePhysics(True);
     iceTimer = IceTimerDefault;
+
     return Success;
 }
 
@@ -1346,6 +1424,7 @@ function int EnableMoonPhysics(string viewer)
     Broadcast(viewer@"reduced gravity!");
     SetMoonPhysics(True);
     gravityTimer = GravityTimerDefault;
+
     return Success;
 }
 
@@ -1354,11 +1433,13 @@ function int StartMeleeOnlyTime(String viewer)
     if (meleeTimer > 0) {
         return TempFail;
     }
-    
+    if (forceWeaponTimer>0) {
+        return TempFail;
+    }    
     ForceAllPawnsToMelee();
     
     Broadcast(viewer@"requests melee weapons only!");
-    
+
     meleeTimer = MeleeTimerDefault;
     
     return Success;
@@ -1371,6 +1452,7 @@ function int StartFlood(string viewer)
         return TempFail;
     }
     Broadcast(viewer@"started a flood!");
+
     SetFlood(True);
     UpdateAllPawnsSwimState();
     floodTimer = FloodTimerDefault;
@@ -1389,8 +1471,9 @@ function int LastPlaceShield(String viewer)
     
     //Actually give them the shield belt
     GiveInventoryToPawn(class'UT_ShieldBelt',p);
-    
+
     Broadcast(viewer@"gave a Shield Belt to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
+
     return Success;
 }
 
@@ -1407,6 +1490,7 @@ function int LastPlaceDamage(String viewer)
     GiveInventoryToPawn(class'UDamage',p);
     
     Broadcast(viewer@"gave a Damage Amplifier to "$p.PlayerReplicationInfo.PlayerName$", who is in last place!");
+
     return Success;
 
 
@@ -1429,9 +1513,10 @@ function int FirstPlaceSlow(String viewer)
     p.GroundSpeed = (class'TournamentPlayer'.Default.GroundSpeed / 3);
 
     speedTimer = SingleSlowTimerDefault;
+    targetPlayer=p.PlayerReplicationInfo.PlayerName;
 
     Broadcast(viewer$" made "$p.PlayerReplicationInfo.PlayerName$" slow as punishment for being in first place!");
-    
+
     return Success;   
 }
 
@@ -1445,6 +1530,10 @@ function int BlueRedeemerShell(String viewer)
     
     high = findPawnByScore(True,FindTeamByTeamScore(False));  //Target individual player who is doing best on a team that isn't in last place
     
+    if (high==None){
+        return TempFail;
+    }
+    
     if (Level.Game.bTeamGame==True){
         avoidTeam = high.PlayerReplicationInfo.Team;
     } else {
@@ -1453,7 +1542,7 @@ function int BlueRedeemerShell(String viewer)
     
     low = findPawnByScore(False,avoidTeam);  //Find worst player who is on a different team (if a team game)
     
-    if (high==None || low == None || high == low){
+    if (low == None || high == low){
         return TempFail;
     }
     
@@ -1464,7 +1553,7 @@ function int BlueRedeemerShell(String viewer)
     missile.Explode(high.Location,high.Location);
 
     Broadcast(viewer$" dropped a redeemer shell on "$high.PlayerReplicationInfo.PlayerName$"'s head, since they are in first place!");
-    
+
     return Success;
 }
 
@@ -1507,7 +1596,7 @@ function int SpawnNewBot(String viewer,name Orders)
     NewBot.SetOrders(Orders,None);
     
     Broadcast(viewer$" added themself to the game as a bot!");
-    
+ 
     return Success;
 }
 
@@ -1517,6 +1606,7 @@ function int StartVampireMode(string viewer)
         return TempFail;
     }
     Broadcast(viewer@"made everyone have a taste for blood!");
+
     vampireTimer = VampireTimerDefault;
     return Success;
 }
@@ -1542,7 +1632,9 @@ function int ForceWeaponUse(String viewer, String weaponName)
     if (forceWeaponTimer>0) {
         return TempFail;
     }
-
+    if (meleeTimer > 0) {
+        return TempFail;
+    }
     
     weaponClass = GetWeaponClassByName(weaponName);
     
@@ -1556,14 +1648,12 @@ function int ForceWeaponUse(String viewer, String weaponName)
     
     forceWeaponTimer = ForceWeaponTimerDefault;
     forcedWeapon = weaponClass;
-    
-    Broadcast(viewer$" forced everybody to use a specific weapon! ("$weaponName$")");
-    
+     
+    Broadcast(viewer$" forced everybody to use a specific weapon! ("$forcedWeapon.default.ItemName$")");
+  
     return Success;
 
 }
-
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////                                  CROWD CONTROL EFFECT MAPPING                                       ////
@@ -1571,7 +1661,6 @@ function int ForceWeaponUse(String viewer, String weaponName)
 
 
 function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
-
     switch(code) {
         case "sudden_death":  //Everyone loses all armour and goes down to one health
             return SuddenDeath(viewer);
@@ -1651,4 +1740,6 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
 defaultproperties
 {
       bHidden=True
+      bAlwaysRelevant=True
+      bNetTemporary=False
 }

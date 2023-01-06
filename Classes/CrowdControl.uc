@@ -40,9 +40,34 @@ simulated function PreBeginPlay()
 {
    initialized = False;
    InitCC();
+   CheckServerPackages();
    Level.Game.RegisterDamageMutator(self);
    sn=Spawn(class'UT99CrowdControl.UT99CCHudSpawnNotify');
 
+}
+
+function CheckServerPackages()
+{
+    local string packages;
+
+    if (Level.NetMode!=NM_DedicatedServer && Level.NetMode!=NM_ListenServer){
+        //Not hosting a server, don't worry about it
+        return;
+    }
+
+    packages=ConsoleCommand("get Engine.GameEngine ServerPackages");
+    if (InStr(packages,"UT99CrowdControl")!=-1){
+        log("UT99CrowdControl is set in ServerPackages!  Nice!");
+    } else {
+        log("UT99CrowdControl is not set in ServerPackages!  Bummer!");
+        packages = Left(packages,Len(packages)-1)$",\"UT99CrowdControl\")";
+        log("Added UT99CrowdControl to ServerPackages!");
+        ConsoleCommand("set Engine.GameEngine ServerPackages "$packages);
+
+        //Reload the level so that the serverpackages gets updated for real
+        log("Restarting game so that ServerPackages are reloaded");
+        Level.ServerTravel( "?Restart", false );
+    }
 }
 
 

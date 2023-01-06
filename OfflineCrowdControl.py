@@ -58,7 +58,7 @@ def randomWeapon():
 
 def pickEffect():
     effects = []
-    
+
     #return ("force_weapon_use",[randomWeapon()])  #For testing a specific effect
     #return ("spawn_a_bot_attack",None)  #For testing a specific effect
     
@@ -127,7 +127,12 @@ def pickEffect():
     effects.append(("spawn_a_bot_defend",None))
     
     effects.append(("give_ammo",[randomAmmo(),random.randint(1,2)]))
+    
+    effects.append(("reset_domination_control_points",None))
+    effects.append(("reset_domination_control_points",None))
 
+    effects.append(("return_ctf_flags",None))
+    effects.append(("return_ctf_flags",None))
 
     return random.choice(effects)
 

@@ -1365,13 +1365,21 @@ function int doNudge(string viewer) {
 
 function int DropSelectedWeapon(string viewer) {
     local Pawn p;
-    
+    local Weapon w;
+
+    //This won't do anything if people are being forced to a weapon, so postpone it
+    if (forceWeaponTimer>0) {
+        return TempFail;
+    }        
+
     foreach AllActors(class'Pawn',p) {
         if (p.IsA('StationaryPawn')){
             continue;
         }
         if (IsWeaponRemovable(p.Weapon)){
+            w=p.Weapon;
             p.DeleteInventory(p.Weapon);
+            w.Destroy();
         }
     }
     
@@ -1655,6 +1663,69 @@ function int ForceWeaponUse(String viewer, String weaponName)
 
 }
 
+function int ResetDominationControlPoints(String viewer)
+{
+    local Domination game;
+    local ControlPoint cp;
+    local bool resetAny;
+
+    game = Domination(Level.Game);
+    
+    if (game == None){
+        return TempFail;
+    }
+    
+    foreach AllActors(class'BotPack.ControlPoint', cp) {
+        if (cp.ControllingTeam!=None){
+            ccLink.ccModule.BroadCastMessage("Control Point controlled by "$cp.ControllingTeam.TeamName);
+            resetAny=True;
+            cp.ControllingTeam=None;
+            cp.Controller=None;
+            cp.DrawScale=cp.Default.DrawScale;
+            cp.Mesh = cp.Default.Mesh;
+            cp.Texture=cp.Default.Texture;
+            cp.LightHue=cp.Default.LightHue;
+            cp.UpdateStatus();
+        } else {
+            ccLink.ccModule.BroadCastMessage("Control Point controlled by nobody");
+        }
+    }
+
+    //Don't trigger if none of the control points were owned yet
+    if (resetAny==False){
+        return TempFail;
+    }
+    Broadcast(viewer$" reset all the control points!");
+    return Success;
+}
+
+function int ReturnCTFFlags(String viewer)
+{
+    local CTFGame game;
+    local CTFFlag flag;
+    local bool resetAny;
+
+    game = CTFGame(Level.Game);
+    
+    if (game == None){
+        return TempFail;
+    }
+    
+    foreach AllActors(class'CTFFlag', flag){
+        if (flag.bHome==False){
+            flag.SendHome();
+            resetAny=True;
+        }
+    }
+
+    //Don't trigger if none of the control points were owned yet
+    if (resetAny==False){
+        return TempFail;
+    }
+    Broadcast(viewer$" returned the flags!");
+    return Success;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////                                  CROWD CONTROL EFFECT MAPPING                                       ////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1727,7 +1798,11 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "force_instagib": //Give everybody an enhanced shock rifle, then force them to use it for the duration.  Ammo tops up if run out  
             return ForceWeaponUse(viewer,"SuperShockRifle");        
         case "force_redeemer": //Give everybody a redeemer, then force them to use it for the duration.  Ammo tops up if run out  
-            return ForceWeaponUse(viewer,"WarHeadLauncher");        
+            return ForceWeaponUse(viewer,"WarHeadLauncher");
+        case "reset_domination_control_points":
+            return ResetDominationControlPoints(viewer);
+        case "return_ctf_flags":
+            return ReturnCTFFlags(viewer);        
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

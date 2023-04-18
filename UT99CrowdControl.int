@@ -1,5 +1,6 @@
 [Public]
 
 Object=(Name=UT99CrowdControl.CrowdControl,Class=Class,MetaClass=Engine.Mutator,Description="Crowd Control support for UT99")
+Object=(Name=UT99CrowdControl.Randomizer,Class=Class,MetaClass=Engine.Mutator,Description="Randomizer for UT99")
 Object=(Name=UT99CrowdControl.UT99CCStartTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Start Crowd Control Tournament,Crowd Control Tournament")
 Object=(Name=UT99CrowdControl.UT99CCLoadTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Resume Crowd Control Tournament,Crowd Control Tournament")

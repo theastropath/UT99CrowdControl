@@ -2,15 +2,15 @@ class Randomizer extends Mutator;
 
 function InitRando()
 {
-    ShuffleItems();
+    ShuffleItems(self);
 }
 
-function ShuffleItems()
+static function ShuffleItems(Actor a)
 {
     local Inventory item, items[512], weapons[128];
     local int num_items, num_weapons, i, slot;
 
-    foreach AllActors(class'Inventory', item) {
+    foreach a.AllActors(class'Inventory', item) {
         if(item.Owner != None) continue;
         if(Weapon(item) != None)
             weapons[num_weapons++] = item;
@@ -31,7 +31,7 @@ function ShuffleItems()
     }
 }
 
-function SwapActors(Actor a, Actor b)
+static function SwapActors(Actor a, Actor b)
 {
     local vector locA;
     local Rotator rotA;

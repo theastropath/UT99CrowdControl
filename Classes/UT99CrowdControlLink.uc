@@ -22,6 +22,7 @@ const CrowdControlPort = 43384;
 
 const ReconDefault = 5;
 
+const MILLISEC_TO_SEC=1000;
 
 function Init(CrowdControl cc, string addr)
 {
@@ -93,7 +94,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 function handleMessage(string msg) {
 
-    local int id,type;
+    local int id,type, duration;
     local string code,viewer;
     local string param[5];
 
@@ -108,12 +109,15 @@ function handleMessage(string msg) {
         viewer = jmsg.get("viewer");
         id = int(jmsg.get("id"));
         type = int(jmsg.get("type"));
+        duration = int(jmsg.get("duration")); //This comes through in milliseconds (If not present, this will give 0)
+        duration = duration/MILLISEC_TO_SEC; //Make it be in seconds
+        
         // maybe a little cleaner than using get_vals and having to worry about matching the array sizes?
         for(i=0; i<ArrayCount(param); i++) {
             param[i] = jmsg.get("parameters", i);
         }
 
-        result = ccEffects.doCrowdControlEvent(code,param,viewer,type);
+        result = ccEffects.doCrowdControlEvent(code,param,viewer,type,duration);
 
         sendReply(id,result);
 

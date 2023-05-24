@@ -487,6 +487,8 @@ function AddItemToPawnInventory(Pawn p, Inventory item)
 {
         item.SetOwner(p);
         item.Inventory = p.Inventory;
+        item.bHeldItem=True;
+        item.RespawnTime=0.0;
         p.Inventory = item;
 }
 
@@ -553,15 +555,15 @@ function class<Weapon> GetWeaponClassByName(String weaponName)
 }
 function Weapon GiveWeaponToPawn(Pawn PlayerPawn, class<Weapon> WeaponClass, optional bool bBringUp)
 {
-	local Weapon NewWeapon;
+    local Weapon NewWeapon;
     local Inventory inv;
   
     inv = PlayerPawn.FindInventoryType(WeaponClass);
 	if (inv != None ) {
-        newWeapon = Weapon(inv);
-		newWeapon.GiveAmmo(PlayerPawn);
-        return newWeapon;
-    }
+            newWeapon = Weapon(inv);
+            newWeapon.GiveAmmo(PlayerPawn);
+            return newWeapon;
+        }
         
 	newWeapon = Spawn(WeaponClass);
 	if ( newWeapon != None ) {
@@ -573,9 +575,9 @@ function Weapon GiveWeaponToPawn(Pawn PlayerPawn, class<Weapon> WeaponClass, opt
 		newWeapon.WeaponSet(PlayerPawn);
 		newWeapon.AmbientGlow = 0;
 		if ( PlayerPawn.IsA('PlayerPawn') )
-			newWeapon.SetHand(PlayerPawn(PlayerPawn).Handedness);
+                    newWeapon.SetHand(PlayerPawn(PlayerPawn).Handedness);
 		else
-			newWeapon.GotoState('Idle');
+                    newWeapon.GotoState('Idle');
 		if ( bBringUp ) {
 			PlayerPawn.Weapon.GotoState('DownWeapon');
 			PlayerPawn.PendingWeapon = None;
@@ -1139,10 +1141,15 @@ function SetAllPlayersBehindView(bool val)
     }
 }
 
-function int ThirdPerson(String viewer)
+function int ThirdPerson(String viewer, int duration)
 {
     SetAllPlayersBehindView(True);
-    behindTimer = BehindTimerDefault;
+    
+    if (duration==0){
+        duration = BehindTimerDefault;
+    }
+    
+    behindTimer = duration;
 
     Broadcast(viewer$" wants you to have an out of body experience!");
   
@@ -1163,30 +1170,37 @@ function int GiveDamageItem(String viewer)
     return Success;
 }
 
-function int FullFat(String viewer)
+function int FullFat(String viewer, int duration)
 {
     if (fatnessTimer>0) {
         return TempFail;
     }
   
     SetAllPlayersFatness(255);
-      
-    fatnessTimer = FatnessTimerDefault;
+
+    if (duration==0){
+        duration = FatnessTimerDefault;
+    }    
+    
+    fatnessTimer = duration;
     bFat=True;
     Broadcast(viewer$" fattened everybody up!");
  
     return Success;
 }
 
-function int SkinAndBones(String viewer)
+function int SkinAndBones(String viewer, int duration)
 {
     if (fatnessTimer>0) {
         return TempFail;
     }
 
     SetAllPlayersFatness(1);
-
-    fatnessTimer = FatnessTimerDefault;
+    
+    if (duration==0){
+        duration = FatnessTimerDefault;
+    }
+    fatnessTimer = duration;
     bFat=False;
     Broadcast(viewer$" made everyone really skinny!");
    
@@ -1194,15 +1208,17 @@ function int SkinAndBones(String viewer)
 }
 
 
-function int GottaGoFast(String viewer)
+function int GottaGoFast(String viewer, int duration)
 {
     if (speedTimer>0) {
         return TempFail;
     }
 
     SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed * 3);
-
-    speedTimer = SpeedTimerDefault;
+    if (duration==0){
+        duration = SpeedTimerDefault;
+    }
+    speedTimer = duration;
     bFast=True;
     targetPlayer="";
     Broadcast(viewer$" made everyone fast like Sonic!");
@@ -1210,7 +1226,7 @@ function int GottaGoFast(String viewer)
     return Success;   
 }
 
-function int GottaGoSlow(String viewer)
+function int GottaGoSlow(String viewer, int duration)
 {
     if (speedTimer>0) {
         return TempFail;
@@ -1218,7 +1234,10 @@ function int GottaGoSlow(String viewer)
 
     SetAllPlayersGroundSpeed(class'TournamentPlayer'.Default.GroundSpeed / 3);
 
-    speedTimer = SlowTimerDefault;
+    if (duration==0){
+        duration = SlowTimerDefault;
+    }
+    speedTimer = duration;
     bFast=False;
     targetPlayer="";
     Broadcast(viewer$" made everyone slow like a snail!");
@@ -1379,6 +1398,8 @@ function int DropSelectedWeapon(string viewer) {
         if (IsWeaponRemovable(p.Weapon)){
             w=p.Weapon;
             p.DeleteInventory(p.Weapon);
+            w.bHidden=True;
+            //w.bDeleteMe=True;
             w.Destroy();
         }
     }
@@ -1412,31 +1433,39 @@ function int GiveWeapon(String viewer, String weaponName)
 
 
 
-function int EnableIcePhysics(string viewer)
+function int EnableIcePhysics(string viewer, int duration)
 {
     if (iceTimer>0) {
         return TempFail;
     }
+    
+    if (duration==0){
+        duration = IceTimerDefault;
+    }
+    
     Broadcast(viewer@"made the ground freeze!");
     SetIcePhysics(True);
-    iceTimer = IceTimerDefault;
+    iceTimer = duration;
 
     return Success;
 }
 
-function int EnableMoonPhysics(string viewer)
+function int EnableMoonPhysics(string viewer, int duration)
 {
     if (gravityTimer>0) {
         return TempFail;
     }
+    if (duration==0){
+        duration = GravityTimerDefault;
+    }
     Broadcast(viewer@"reduced gravity!");
     SetMoonPhysics(True);
-    gravityTimer = GravityTimerDefault;
+    gravityTimer = duration;
 
     return Success;
 }
 
-function int StartMeleeOnlyTime(String viewer)
+function int StartMeleeOnlyTime(String viewer, int duration)
 {
     if (meleeTimer > 0) {
         return TempFail;
@@ -1447,14 +1476,16 @@ function int StartMeleeOnlyTime(String viewer)
     ForceAllPawnsToMelee();
     
     Broadcast(viewer@"requests melee weapons only!");
-
-    meleeTimer = MeleeTimerDefault;
+    if (duration==0){
+        duration = MeleeTimerDefault;
+    }
+    meleeTimer = duration;
     
     return Success;
 }
 
 
-function int StartFlood(string viewer)
+function int StartFlood(string viewer, int duration)
 {
     if (floodTimer>0) {
         return TempFail;
@@ -1463,7 +1494,10 @@ function int StartFlood(string viewer)
 
     SetFlood(True);
     UpdateAllPawnsSwimState();
-    floodTimer = FloodTimerDefault;
+    if (duration==0){
+        duration = FloodTimerDefault;
+    }
+    floodTimer = duration;
     return Success;
 }
 
@@ -1504,7 +1538,7 @@ function int LastPlaceDamage(String viewer)
 
 }
 
-function int FirstPlaceSlow(String viewer)
+function int FirstPlaceSlow(String viewer, int duration)
 {
     local Pawn p;
 
@@ -1519,8 +1553,11 @@ function int FirstPlaceSlow(String viewer)
     }
 
     p.GroundSpeed = (class'TournamentPlayer'.Default.GroundSpeed / 3);
-
-    speedTimer = SingleSlowTimerDefault;
+    
+    if (duration == 0){
+        duration = SingleSlowTimerDefault;
+    }
+    speedTimer = duration;
     targetPlayer=p.PlayerReplicationInfo.PlayerName;
 
     Broadcast(viewer$" made "$p.PlayerReplicationInfo.PlayerName$" slow as punishment for being in first place!");
@@ -1608,14 +1645,16 @@ function int SpawnNewBot(String viewer,name Orders)
     return Success;
 }
 
-function int StartVampireMode(string viewer)
+function int StartVampireMode(string viewer, int duration)
 {
     if (vampireTimer>0) {
         return TempFail;
     }
     Broadcast(viewer@"made everyone have a taste for blood!");
-
-    vampireTimer = VampireTimerDefault;
+    if (duration==0){
+        duration = VampireTimerDefault;
+    }
+    vampireTimer = duration;
     return Success;
 }
 
@@ -1632,7 +1671,7 @@ function ForceAllPawnsToSpecificWeapon(class<Weapon> weaponClass)
 }
 
 
-function int ForceWeaponUse(String viewer, String weaponName)
+function int ForceWeaponUse(String viewer, String weaponName, int duration)
 {
     local class<Weapon> weaponClass;
     local Pawn p;
@@ -1653,8 +1692,10 @@ function int ForceWeaponUse(String viewer, String weaponName)
         GiveWeaponToPawn(p,weaponClass);
         
     }
-    
-    forceWeaponTimer = ForceWeaponTimerDefault;
+    if (duration==0){
+        duration = ForceWeaponTimerDefault;
+    }
+    forceWeaponTimer = duration;
     forcedWeapon = weaponClass;
      
     Broadcast(viewer$" forced everybody to use a specific weapon! ("$forcedWeapon.default.ItemName$")");
@@ -1731,7 +1772,7 @@ function int ReturnCTFFlags(String viewer)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-function int doCrowdControlEvent(string code, string param[5], string viewer, int type) {
+function int doCrowdControlEvent(string code, string param[5], string viewer, int type, int duration) {
     switch(code) {
         case "sudden_death":  //Everyone loses all armour and goes down to one health
             return SuddenDeath(viewer);
@@ -1742,17 +1783,17 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "give_health": //Give an arbitrary amount of health.  Allows overhealing, up to 199
             return GiveHealth(viewer,Int(param[0]));
         case "third_person":  //Switches to behind view for everyone
-            return ThirdPerson(viewer);
+            return ThirdPerson(viewer,duration);
         case "bonus_dmg":   //Gives everyone a damage bonus item (triple damage)
             return GiveDamageItem(viewer);
         case "full_fat":   //Makes everyone really fat for a minute
-            return FullFat(viewer);
+            return FullFat(viewer,duration);
         case "skin_and_bones":  //Makes everyone really skinny for a minute
-            return SkinAndBones(viewer);
+            return SkinAndBones(viewer,duration);
         case "gotta_go_fast":  //Makes everyone really fast for a minute
-            return GottaGoFast(viewer);
+            return GottaGoFast(viewer, duration);
         case "gotta_go_slow":  //Makes everyone really slow for 15 seconds (A minute was too much!)
-            return GottaGoSlow(viewer);
+            return GottaGoSlow(viewer, duration);
         case "thanos":  //Every player has a 50% chance of being killed
             return ThanosSnap(viewer);
         case "swap_player_position":  //Picks two random players and swaps their positions
@@ -1772,19 +1813,19 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "give_redeemer":  //This is separate so that it can be priced differently
             return GiveWeapon(viewer,"WarHeadLauncher");
         case "ice_physics":  //Makes the floor very slippery (This is kind of stuttery in multiplayer...) for a minute
-            return EnableIcePhysics(viewer);
+            return EnableIcePhysics(viewer, duration);
         case "low_grav":  //Makes the world entirely low gravity for a minute
-            return EnableMoonPhysics(viewer);
+            return EnableMoonPhysics(viewer, duration);
         case "melee_only": //Force everyone to use melee for the duration (continuously check weapon and switch to melee choice)
-            return StartMeleeOnlyTime(viewer);
+            return StartMeleeOnlyTime(viewer,duration);
         case "flood": //Make the entire map a water zone for a minute!
-            return StartFlood(viewer);
+            return StartFlood(viewer, duration);
         case "last_place_shield": //Give last place player a shield belt
             return LastPlaceShield(viewer);
         case "last_place_bonus_dmg": //Give last place player a bonus damage item
             return LastPlaceDamage(viewer);
         case "first_place_slow": //Make the first place player really slow   
-            return FirstPlaceSlow(viewer);
+            return FirstPlaceSlow(viewer, duration);
         case "blue_redeemer_shell": //Blow up first place player
             return BlueRedeemerShell(viewer);
         case "spawn_a_bot_attack": //Summon a bot that attacks, then disappears after a death   
@@ -1792,13 +1833,13 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "spawn_a_bot_defend": //Summon a bot that defends, then disappears after a death
             return SpawnNewBot(viewer,'Defend');        
         case "vampire_mode":  //Inflicting damage heals you for the damage dealt (Can grab damage via MutatorTakeDamage)
-            return StartVampireMode(viewer);
+            return StartVampireMode(viewer, duration);
         case "force_weapon_use": //Give everybody a weapon, then force them to use it for the duration.  Ammo tops up if run out  
-            return ForceWeaponUse(viewer,param[0]);        
+            return ForceWeaponUse(viewer,param[0],duration);        
         case "force_instagib": //Give everybody an enhanced shock rifle, then force them to use it for the duration.  Ammo tops up if run out  
-            return ForceWeaponUse(viewer,"SuperShockRifle");        
+            return ForceWeaponUse(viewer,"SuperShockRifle",duration);        
         case "force_redeemer": //Give everybody a redeemer, then force them to use it for the duration.  Ammo tops up if run out  
-            return ForceWeaponUse(viewer,"WarHeadLauncher");
+            return ForceWeaponUse(viewer,"WarHeadLauncher",duration);
         case "reset_domination_control_points":
             return ResetDominationControlPoints(viewer);
         case "return_ctf_flags":

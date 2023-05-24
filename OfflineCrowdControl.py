@@ -21,6 +21,10 @@ def genMsg(code,param):
         print(paramstr)
         msg+=paramstr
         msg+=']'
+
+    msg+=',"duration":'
+    msg+= str(random.randint(10,80)*1000)
+        
     msg+='}\0'
 
     return msg

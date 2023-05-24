@@ -35,6 +35,8 @@ static function SwapActors(Actor a, Actor b)
 {
     local vector locA;
     local Rotator rotA;
+    local InventorySpot invSpot;
+    local Inventory invA, invB;
 
     locA = a.Location;
     rotA = a.Rotation;
@@ -42,6 +44,19 @@ static function SwapActors(Actor a, Actor b)
     a.SetRotation(b.Rotation);
     b.SetLocation(locA);
     b.SetRotation(rotA);
+    
+    //At the moment, these should both be Inventory items, but...
+    if (Inventory(a)!=None && Inventory(b)!=None) {
+        invA = Inventory(a);
+        invB = Inventory(b);
+        
+        invSpot = invA.MyMarker;
+        invA.MyMarker = invB.MyMarker;
+        invB.MyMarker = invSpot;
+        
+        invA.MyMarker.markedItem = invA;
+        invB.MyMarker.markedItem = invB;
+    }
 }
 
 simulated function PreBeginPlay()

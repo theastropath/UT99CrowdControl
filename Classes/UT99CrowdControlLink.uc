@@ -109,7 +109,6 @@ function handleMessage(string msg) {
     local int i;
 
     if (isCrowdControl(msg)) {
-        log("Handling message: "$msg);
         jmsg = class'Json'.static.parse(Level, msg);
         code = jmsg.get("code");
         viewer = jmsg.get("viewer");
@@ -126,8 +125,6 @@ function handleMessage(string msg) {
         result = ccEffects.doCrowdControlEvent(code,param,viewer,type,duration);
 
         sendReply(id,result);
-        log("Sent reply for message "$msg);
-
     } else {
         ccModule.BroadCastMessage("Got a weird message: "$msg);
     }

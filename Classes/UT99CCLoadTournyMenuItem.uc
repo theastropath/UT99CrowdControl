@@ -32,5 +32,5 @@ function Execute()
 defaultproperties
 {
     MenuCaption="Resume Crowd Control Tournament"
-    MenuHelp="Crowd Control Tournament"
+    MenuHelp="Load a previously saved Crowd Control Tournament"
 }

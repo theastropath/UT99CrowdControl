@@ -10,7 +10,7 @@ function StartMap(string StartMap, int Rung, string GameType)
 
 	StartMap = StartMap
 				$"?Game="$GameType
-				$"?Mutator=UT99CrowdControl.CrowdControl"
+				$"?Mutator="$class'UT99CrowdControl.UT99CCSettingsClientWindow'.static.GenerateMutatorList()
 				$"?Tournament="$Rung
 				$"?Name="$GetPlayerOwner().PlayerReplicationInfo.PlayerName
 				$"?Team=0";

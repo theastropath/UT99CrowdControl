@@ -32,5 +32,5 @@ function Execute()
 defaultproperties
 {
     MenuCaption="Start Crowd Control Tournament"
-    MenuHelp="Crowd Control Tournament"
+    MenuHelp="Start a new Crowd Control Tournament"
 }

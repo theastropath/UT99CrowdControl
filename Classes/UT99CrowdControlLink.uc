@@ -1,7 +1,7 @@
 class UT99CrowdControlLink extends TcpLink transient;
 
 var string crowd_control_addr;
-var CrowdControl ccModule;
+var Mutator ccModule;
 var UT99CCEffects ccEffects;
 
 var int ListenPort;
@@ -34,8 +34,13 @@ function Init(CrowdControl cc, string addr)
     crowd_control_addr = addr; 
     enabled = True;
     
-    ccEffects = Spawn(class'UT99CCEffects');
-    ccEffects.Init(self);
+    foreach AllActors(class'UT99CCEffects',ccEffects){
+        break;
+    }
+    if (ccEffects==None) {
+        ccEffects = Spawn(class'UT99CCEffects');
+        ccEffects.Init(ccModule);
+    }
     
     //Initialize the pending message buffer
     pendingMsg = "";
@@ -104,6 +109,7 @@ function handleMessage(string msg) {
     local int i;
 
     if (isCrowdControl(msg)) {
+        log("Handling message: "$msg);
         jmsg = class'Json'.static.parse(Level, msg);
         code = jmsg.get("code");
         viewer = jmsg.get("viewer");
@@ -120,6 +126,7 @@ function handleMessage(string msg) {
         result = ccEffects.doCrowdControlEvent(code,param,viewer,type,duration);
 
         sendReply(id,result);
+        log("Sent reply for message "$msg);
 
     } else {
         ccModule.BroadCastMessage("Got a weird message: "$msg);

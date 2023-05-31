@@ -1,6 +1,6 @@
 Class UT99CCEffects extends Info;
 
-var UT99CrowdControlLink ccLink;
+var Mutator baseMutator;
 
 const Success = 0;
 const Failed = 1;
@@ -81,14 +81,14 @@ replication
         behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,targetPlayer,GetEffectList;
 }
 
-function Init(UT99CrowdControlLink crowd_control_link)
+function Init(Mutator baseMut)
 {
     local int i;
     local DeathMatchPlus game;
 
     game = DeathMatchPlus(Level.Game);
     
-    ccLink = crowd_control_link;
+    baseMutator = baseMut;
     
     NormalGravity=vect(0,0,-950);
     FloatGrav=vect(0,0,0.15);
@@ -105,10 +105,27 @@ function Init(UT99CrowdControlLink crowd_control_link)
     
 }
 
+function SendCCMessage(string msg)
+{
+    local PlayerPawn p;
+    local color c;
+    
+    c.R=0;
+    c.G=255;
+    c.B=0;
+
+    foreach AllActors(class'PlayerPawn',p){
+        p.ClearProgressMessages();
+        p.SetProgressTime(4);
+        p.SetProgressColor(c,0);
+        p.SetProgressMessage(msg,0);
+    }
+}
+
 function Broadcast(string msg)
 {
-    ccLink.ccModule.BroadCastMessage(msg);
-    ccLink.ccModule.SendCCMessage(msg);
+    baseMutator.BroadCastMessage(msg);
+    SendCCMessage(msg);
 }
 
 
@@ -1718,17 +1735,12 @@ function int ResetDominationControlPoints(String viewer)
     
     foreach AllActors(class'BotPack.ControlPoint', cp) {
         if (cp.ControllingTeam!=None){
-            ccLink.ccModule.BroadCastMessage("Control Point controlled by "$cp.ControllingTeam.TeamName);
+            //baseMutator.BroadCastMessage("Control Point controlled by "$cp.ControllingTeam.TeamName);
             resetAny=True;
-            cp.ControllingTeam=None;
             cp.Controller=None;
-            cp.DrawScale=cp.Default.DrawScale;
-            cp.Mesh = cp.Default.Mesh;
-            cp.Texture=cp.Default.Texture;
-            cp.LightHue=cp.Default.LightHue;
             cp.UpdateStatus();
-        } else {
-            ccLink.ccModule.BroadCastMessage("Control Point controlled by nobody");
+        //} else {
+            //baseMutator.BroadCastMessage("Control Point controlled by nobody");
         }
     }
 

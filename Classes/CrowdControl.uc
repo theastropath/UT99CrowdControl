@@ -28,8 +28,13 @@ function InitCC()
     }
     SaveConfig();
     
-    ccLink = Spawn(class'UT99CrowdControlLink');
-    ccLink.Init(self,crowd_control_addr);
+    foreach AllActors(class'UT99CrowdControlLink',ccLink){
+        break;
+    }
+    if (ccLink==None){
+        ccLink = Spawn(class'UT99CrowdControlLink');
+        ccLink.Init(self,crowd_control_addr);
+    }
     
     BroadcastMessage("Crowd Control has initialized!");
     
@@ -42,7 +47,12 @@ simulated function PreBeginPlay()
    InitCC();
    CheckServerPackages();
    Level.Game.RegisterDamageMutator(self);
-   sn=Spawn(class'UT99CrowdControl.UT99CCHudSpawnNotify');
+   foreach AllActors(class'UT99CrowdControl.UT99CCHudSpawnNotify',sn){
+       break;
+   }
+   if (sn==None){
+       sn=Spawn(class'UT99CrowdControl.UT99CCHudSpawnNotify');
+   }
 
 }
 
@@ -199,7 +209,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
     
     if (nextBatch~="cc") {
         
-        if (Sender.PlayerReplicationInfo.bAdmin) {
+        if (Sender.PlayerReplicationInfo.bAdmin || Level.NetMode==NM_Standalone) {
         
             pos = InStr(remainingStr," ");
             if (pos!=-1){
@@ -236,22 +246,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
 		NextMutator.Mutate(MutateString, Sender);
 }
 
-function SendCCMessage(string msg)
-{
-    local PlayerPawn p;
-    local color c;
-    
-    c.R=0;
-    c.G=255;
-    c.B=0;
 
-    foreach AllActors(class'PlayerPawn',p){
-        p.ClearProgressMessages();
-        p.SetProgressTime(4);
-        p.SetProgressColor(c,0);
-        p.SetProgressMessage(msg,0);
-    }
-}
 
 defaultproperties
 {

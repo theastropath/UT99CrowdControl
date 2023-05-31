@@ -457,7 +457,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
         remainingStr = "";
     }
     
-    if (nextBatch~="cc") {
+    if (nextBatch~="occ") {
         
         if (Sender.PlayerReplicationInfo.bAdmin || Level.NetMode==NM_Standalone) {
         
@@ -491,12 +491,12 @@ function Mutate (string MutateString, PlayerPawn Sender)
             } else if (nextBatch~="help"){
                 MutateHelp(Sender);
             } else {
-                Sender.ClientMessage("Unrecognized UT99 Offline Crowd Control command: <"$nextBatch$">  Use 'mutate cc help' for more help");
+                Sender.ClientMessage("Unrecognized UT99 Offline Crowd Control command: <"$nextBatch$">  Use 'mutate occ help' for more help");
             }
             SaveConfig();
         
         } else {
-            Sender.ClientMessage("Crowd Control mutator commands only available to admins - Please login!");
+            Sender.ClientMessage("Offline Crowd Control mutator commands only available to admins - Please login!");
         }
     }
     

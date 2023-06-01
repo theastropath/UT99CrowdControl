@@ -4,7 +4,9 @@
 class UT99CCOfflineModMenuItem expands UMenuModMenuItem;
 function Execute()
 {
-  MenuItem.Owner.Root.CreateWindow(class'UT99CCOfflineConfigWindow',10,10,200,500);
+  if (MenuItem.Owner.Root.GetPlayerOwner().Level.NetMode==NM_Standalone){
+    MenuItem.Owner.Root.CreateWindow(class'UT99CCOfflineConfigWindow',10,10,200,500);
+  }
 }
 defaultproperties
 {

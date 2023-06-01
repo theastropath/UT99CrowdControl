@@ -84,7 +84,7 @@ function Timer() {
     effectCountdown--;    
     if (effectCountdown <= 0){
         RandomOfflineEffects();
-        effectCountdown=effectFrequency;
+        effectCountdown=Default.effectFrequency;
     }
 }
 
@@ -134,7 +134,7 @@ function int RandomOfflineEffects()
     local int i,j;
     
     // only 2% chance for an effect, each second
-    if(FRand() > effectChance) return 0;
+    if(FRand() > Default.effectChance) return 0;
 
     viewer = defaultMutatorName;
     param[0] = "1";

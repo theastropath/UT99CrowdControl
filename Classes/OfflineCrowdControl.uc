@@ -505,6 +505,141 @@ function Mutate (string MutateString, PlayerPawn Sender)
 		NextMutator.Mutate(MutateString, Sender);
 }
 
+function EnableEffect(int i,bool Enabled)
+{
+    effects[i].enabled=Enabled;
+    SaveConfig();
+}
+
+static function SetEffectEnabled(PlayerPawn p, int i,bool enabled)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.EnableEffect(i,enabled);
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+
+function SetEffectDur(int i,int minDur, int maxDur)
+{
+    if (minDur!=-1){
+        effects[i].durationMin=minDur;
+    }
+    if (maxDur!=-1){
+        effects[i].durationMax=maxDur;
+    }
+    SaveConfig();
+}
+
+static function SetEffectDuration(PlayerPawn p, int i,int minDur, int maxDur)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.SetEffectDur(i,minDur,maxDur);
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+
+function SetEffectQuant(int i,int minQuant, int maxQuant)
+{
+    if (minQuant!=-1){
+        effects[i].quantityMin=minQuant;
+    }
+    if (maxQuant!=-1){
+        effects[i].quantityMax=maxQuant;
+    }
+    SaveConfig();
+}
+
+static function SetEffectQuantity(PlayerPawn p, int i,int minQuant, int maxQuant)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.SetEffectQuant(i,minQuant,maxQuant);
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+
+static function SetEffectFrequency(PlayerPawn p, int freq)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.effectFrequency=freq;
+    occ.SaveConfig();
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+
+static function SetEffectChance(PlayerPawn p, float chance)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.effectChance=chance;
+    occ.SaveConfig();
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+
+static function SetMutatorName(PlayerPawn p, string mutName)
+{
+    local OfflineCrowdControl occ;
+    local bool spawned;
+    
+    spawned=class'OfflineCrowdControl'.static.GetOCC(p,occ);
+    
+    occ.defaultMutatorName=mutName;
+    occ.SaveConfig();
+    
+    if (spawned){
+        occ.Destroy();
+    }
+}
+static function bool GetOCC(PlayerPawn p, out OfflineCrowdControl occ)
+{
+    local bool spawned;   
+    spawned=False;
+    
+    foreach p.AllActors(class'OfflineCrowdControl',occ){
+        break;
+    }
+    
+    if (occ==None){
+        occ=p.Spawn(class'OfflineCrowdControl');
+        spawned=True;
+    }
+    
+    return spawned;
+
+}
+static function EffectConfig GetEffectInfo(int i)
+{
+    return Default.effects[i];
+}
 
 defaultproperties
 {

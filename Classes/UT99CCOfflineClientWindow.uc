@@ -86,7 +86,7 @@ function Created()
         effControls[i].NameLabel.SetFont(F_Bold);
         ControlOffset+=20.0;
         
-        if (effConfig.quantityMin!=0 && effConfig.quantityMax!=0){
+        if (effConfig.quantityMin!=0 || effConfig.quantityMax!=0){
             effControls[i].QuantMinEdit = UWindowEditControl(CreateControl(class'UWindowEditControl', ControlLeft, ControlOffset, WinWidth, 1));
             effControls[i].QuantMinEdit.SetText("Min Quantity: ");
             effControls[i].QuantMinEdit.SetFont(F_Normal);
@@ -108,7 +108,7 @@ function Created()
             ControlOffset+=20.0;
         }
         
-        if (effConfig.durationMin!=0 && effConfig.durationMax!=0){
+        if (effConfig.durationMin!=0 || effConfig.durationMax!=0){
             effControls[i].DurMinEdit = UWindowEditControl(CreateControl(class'UWindowEditControl', ControlLeft, ControlOffset, WinWidth, 1));
             effControls[i].DurMinEdit.SetText("Min Duration: ");
             effControls[i].DurMinEdit.SetFont(F_Normal);
@@ -146,6 +146,7 @@ function Created()
 function Notify(UWindowDialogControl C, byte E)
 {
     local int i;
+    local OfflineCrowdControl.EffectConfig effConfig;
     
     if (c==FrequencyEdit) {
         class'OfflineCrowdControl'.static.SetEffectFrequency(GetPlayerOwner(),int(FrequencyEdit.GetValue()));
@@ -155,20 +156,37 @@ function Notify(UWindowDialogControl C, byte E)
         class'OfflineCrowdControl'.static.SetMutatorName(GetPlayerOwner(),NameEdit.GetValue());
     } else {
         for (i=0;i<ArrayCount(effControls);i++){
+            effConfig = class'UT99CrowdControl.OfflineCrowdControl'.Static.GetEffectInfo(i);
             if (C==effControls[i].EnabledEdit) {
                 class'OfflineCrowdControl'.static.SetEffectEnabled(GetPlayerOwner(),i,effControls[i].EnabledEdit.bChecked);
                 break;
             } else if (C==effControls[i].QuantMinEdit) {
-                class'OfflineCrowdControl'.static.SetEffectQuantity(GetPlayerOwner(),i,int(effControls[i].QuantMinEdit.GetValue()),-1);
+                if (int(effControls[i].QuantMinEdit.GetValue()) > 0){
+                    class'OfflineCrowdControl'.static.SetEffectQuantity(GetPlayerOwner(),i,int(effControls[i].QuantMinEdit.GetValue()),-1);
+                //} else {
+                //    effControls[i].QuantMinEdit.SetValue(String(effConfig.quantityMin));
+                }
                 break;            
             } else if (C==effControls[i].QuantMaxEdit) {
-                class'OfflineCrowdControl'.static.SetEffectQuantity(GetPlayerOwner(),i,-1,int(effControls[i].QuantMaxEdit.GetValue()));
+                if (int(effControls[i].QuantMaxEdit.GetValue()) > 0){
+                    class'OfflineCrowdControl'.static.SetEffectQuantity(GetPlayerOwner(),i,-1,int(effControls[i].QuantMaxEdit.GetValue()));
+                //} else {
+                //    effControls[i].QuantMaxEdit.SetValue(String(effConfig.quantityMax));
+                }
                 break;            
             } else if (C==effControls[i].DurMinEdit) {
-                class'OfflineCrowdControl'.static.SetEffectDuration(GetPlayerOwner(),i,int(effControls[i].DurMinEdit.GetValue()),-1);
+                if (int(effControls[i].DurMinEdit.GetValue()) > 0){
+                    class'OfflineCrowdControl'.static.SetEffectDuration(GetPlayerOwner(),i,int(effControls[i].DurMinEdit.GetValue()),-1);
+                //} else {
+                //    effControls[i].DurMinEdit.SetValue(String(effConfig.durationMin));
+                }
                 break;
             } else if (C==effControls[i].DurMaxEdit) {
-                class'OfflineCrowdControl'.static.SetEffectDuration(GetPlayerOwner(),i,-1,int(effControls[i].DurMaxEdit.GetValue()));
+                if (int(effControls[i].DurMaxEdit.GetValue()) > 0){
+                    class'OfflineCrowdControl'.static.SetEffectDuration(GetPlayerOwner(),i,-1,int(effControls[i].DurMaxEdit.GetValue()));
+                //} else {
+                //    effControls[i].DurMaxEdit.SetValue(String(effConfig.durationMax));
+                }
                 break;
             }
         }

@@ -1295,7 +1295,7 @@ function int ThanosSnap(String viewer)
 
 }
 
-
+//Leaving this here just in case we maybe want this as a standalone effect at some point?
 function int swapPlayer(string viewer) {
     local Pawn a,b;
     local int tries;
@@ -1328,6 +1328,69 @@ function int swapPlayer(string viewer) {
     Broadcast(viewer@"thought "$a.PlayerReplicationInfo.PlayerName$" would look better if they were where"@b.PlayerReplicationInfo.PlayerName@"was");
 
     return Success;
+}
+
+function int SwapAllPlayers(string viewer){
+    //The game expects a maximum of 16 players, but it's possible to cram more in...  Just do up to 50, for safety
+    local vector locs[50];
+    local rotator rots[50];
+    local EPhysics phys[50];
+    local Actor bases[50];
+    local Pawn pawns[50];
+    local int numPlayers,num;
+    local Pawn p;
+    local int i,newLoc;
+
+    //Collect all the information about where pawns are currently
+    //and remove their collision
+    foreach AllActors(class'Pawn',p) {
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            pawns[numPlayers] = p;
+            locs[numPlayers]=p.Location;
+            rots[numPlayers]=p.Rotation;
+            phys[numPlayers]=p.Physics;
+            bases[numPlayers]=p.Base;
+            numPlayers++;
+
+            p.SetCollision(False,False,False);
+
+            if (numPlayers==ArrayCount(Pawns)){
+                break; //Hit the limit, just work amongst these ones
+            }
+        }
+    }
+    
+    //Move everyone
+    num = numPlayers;
+    for (i=numPlayers-1;i>=0;i--){
+        newLoc = Rand(num);
+        //Broadcast(pawns[i].PlayerReplicationInfo.PlayerName@"moving to location "$newLoc);
+        
+        pawns[i].SetLocation(locs[newLoc]);
+        pawns[i].SetRotation(rots[newLoc]);
+        pawns[i].SetPhysics(phys[newLoc]);
+        pawns[i].SetBase(bases[newLoc]);
+        
+        num--;
+
+        locs[newLoc]=locs[num];
+        rots[newLoc]=rots[num];
+        phys[newLoc]=phys[num];
+        bases[newLoc]=bases[num];
+    }
+
+    //Re-enable collision and recalculate bot logic
+    for (i=numPlayers-1;i>=0;i--){
+        pawns[i].SetCollision(True,True,True);
+        if (pawns[i].PlayerReplicationInfo.bIsABot==True && Bot(pawns[i])!=None){
+            Bot(pawns[i]).WhatToDoNext('','');
+        }
+    }
+
+    Broadcast(viewer@"decided to shuffle where everyone was");
+
+    return Success;
+
 }
 
 
@@ -1810,7 +1873,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "thanos":  //Every player has a 50% chance of being killed
             return ThanosSnap(viewer);
         case "swap_player_position":  //Picks two random players and swaps their positions
-            return swapPlayer(viewer);
+            //return swapPlayer(viewer); //Just swaps two players
+            return SwapAllPlayers(viewer); //Swaps ALL players
         case "no_ammo":  //Removes all ammo from all players
             return NoAmmo(viewer);
         case "give_ammo":  //Gives X boxes of a particular ammo type to all players

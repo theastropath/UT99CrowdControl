@@ -197,7 +197,8 @@ function PeriodicUpdates()
         if (behindTimer <= 0) {
             SetAllPlayersBehindView(False);
             Broadcast("Returning to first person view...");
-
+        } else {
+            SetAllPlayersBehindView(True);
         }
     }
 

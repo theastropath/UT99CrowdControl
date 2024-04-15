@@ -48,7 +48,7 @@ Good luck!  Epic removed the game for sale from everywhere that I'm aware of.
 
 ## Feedback
   
-Join the Discord server to discuss this mod or to provide feedback: https://discord.gg/GYqqDdAzzW
+Join the Discord server to discuss this mod or to provide feedback: https://mods4ever.com/discord
 
   
 

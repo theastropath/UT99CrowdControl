@@ -1,6 +1,9 @@
 [Public]
 
 Object=(Name=UT99CrowdControl.CrowdControl,Class=Class,MetaClass=Engine.Mutator,Description="Crowd Control support for UT99")
+Object=(Name=UT99CrowdControl.OfflineCrowdControl,Class=Class,MetaClass=Engine.Mutator,Description="Simulated Crowd Control support for UT99")
 Object=(Name=UT99CrowdControl.Randomizer,Class=Class,MetaClass=Engine.Mutator,Description="Randomizer for UT99")
-Object=(Name=UT99CrowdControl.UT99CCStartTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Start Crowd Control Tournament,Crowd Control Tournament")
-Object=(Name=UT99CrowdControl.UT99CCLoadTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Resume Crowd Control Tournament,Crowd Control Tournament")
+Object=(Name=UT99CrowdControl.UT99CCStartTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Start Crowd Control Tournament,Start a new Crowd Control Tournament")
+Object=(Name=UT99CrowdControl.UT99CCLoadTournyMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Resume Crowd Control Tournament,Load a previously saved Crowd Control Tournament")
+Object=(Name=UT99CrowdControl.UT99CCSettingsModMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Crowd Control Tournament Settings,Configure what options apply to the Crowd Control Tournament")
+Object=(Name=UT99CrowdControl.UT99CCOfflineModMenuItem,Class=Class,MetaClass=UMenu.UMenuModMenuItem,Description="Offline Crowd Control Settings,Configure the Offline Crowd Control mutator")

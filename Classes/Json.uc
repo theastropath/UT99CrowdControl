@@ -1,3 +1,12 @@
+//////////////////////////////////////////////////////////////////////
+//                  JSON Handling for UnrealScript                  //
+//                                                                  //
+//               Written by Die4Ever and TheAstropath               //
+//                                                                  //
+//  Report issues with this class at https://mods4ever.com/discord  //
+//        or https://github.com/Die4Ever/deus-ex-randomizer         //
+//////////////////////////////////////////////////////////////////////
+
 class Json extends Info transient;
 // singleton class
 
@@ -20,20 +29,31 @@ struct JsonMsg
     var int count;
 };
 
-var string _buf;
 var JsonMsg j;
+var bool singleton;
+
+// parsing state variables
+var int i;
+var IntPair p;
+var int parsestate;
+var int inBraces;
+var string msg;
+var string _buf;
 
 // #endregion
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////                                    JSON PUBLIC INTERFACE                                                 ////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // #region Json Public Interface
-static function Json parse(LevelInfo parent, string msg, optional Json o) {
-    if(o == None)
-        foreach parent.AllActors(class'json', o)
-            break;
-    if(o == None)
-        o = parent.Spawn(class'json');
+static function Json parse(LevelInfo parent, string msg) {
+    local Json o;
+    foreach parent.AllActors(class'Json', o) {
+        if(o.singleton) break;
+    }
+    if(o == None) {
+        o = parent.Spawn(class'Json');
+        o.singleton = true;
+    }
     o._parse(msg);
     return o;
 }
@@ -76,15 +96,15 @@ function int find(string key) {
 }
 
 function int get_vals(string key, optional out string vals[10]) {
-    local int i;
+    local int l;
     local int k;
 
     k = find(key);
     if(k == -1)
         return 0;
 
-    for(i=0; i < ArrayCount(vals); i++)
-        vals[i] = get_string(j.e[k].value[i]);
+    for(l=0; l < ArrayCount(vals); l++)
+        vals[l] = get_string(j.e[k].value[l]);
     return j.e[k].valCount;
 }
 
@@ -116,7 +136,7 @@ static function string Start(string type)
 
 static function Add(out string j, coerce string key, coerce string value)
 {
-    j = j $ ",\"" $ key $ "\":\"" $ value $ "\"";
+    j = j $ ",\"" $ key $ "\":\"" $ JsonEscapeCharsInString(value) $ "\"";
 }
 
 static function End(out string j)
@@ -135,11 +155,8 @@ const KeyState = 1;
 const ValState = 2;
 const ArrayState = 3;
 const ArrayDoneState = 4;
-const EndingState = 5;
-
-function _parse(string msg) {
-    ParseJson(msg);
-}
+const EndJsonState = 5;
+const ObjectState = 6;
 
 static function l(coerce string message, string j)
 {
@@ -218,6 +235,32 @@ static function string JsonGetEscapedChar(string c) {
 }
 
 
+static function string JsonEscapeCharsInString(string inmsg) {
+    local int i, a, length;
+    local string buf, c;
+
+    buf = "";
+    length = Len(inmsg);
+    for (i = 0; i < length; i++) {
+        c = Mid(inmsg,i,1); //Grab a single character
+        a = Asc(c);
+
+        switch(a){
+            case 34: //34 is "
+                buf = buf $ Chr(92) $ Chr(34); // replaces with \ " (no space between slash and quotes - without the space UCC gets stuck)
+                break;
+            case 92: //92 is \
+                buf = buf $ Chr(92) $ Chr(92); //Replaces with \\
+                break;
+            default:
+                buf = buf $ c;
+                break;
+        }
+    }
+    return buf;
+}
+
+
 function int ParseKey(string msg, out int i, out IntPair p, out int inBraces) {
     local string c;
 
@@ -242,7 +285,7 @@ function int ParseKey(string msg, out int i, out IntPair p, out int inBraces) {
         case "}":
             inBraces--;
             if(inBraces <= 0)
-                return EndingState;
+                return EndJsonState;
 
         case "]":
             _buf = _buf $ c;
@@ -286,7 +329,7 @@ function int ParseVal(string msg, out int i, out IntPair p, out int inBraces) {
             inBraces++;
             p.idx = Len(_buf);
             p.len = 0;
-            break;
+            return ObjectState;
 
         case "}":
             inBraces--;
@@ -294,7 +337,7 @@ function int ParseVal(string msg, out int i, out IntPair p, out int inBraces) {
                 j.e[j.count].value[j.e[j.count].valCount] = p;
                 j.e[j.count].valCount++;
                 j.count++;
-                return EndingState;
+                return EndJsonState;
             }
             break;
 
@@ -342,7 +385,7 @@ function int ParseArray(string msg, out int i, out IntPair p, out int inBraces) 
             inBraces++;
             p.idx = Len(_buf);
             p.len = 0;
-            break;
+            return ObjectState;
 
         case "}":
             // TODO: arrays of objects
@@ -374,6 +417,32 @@ function int ParseArray(string msg, out int i, out IntPair p, out int inBraces) 
     }
 }
 
+function int ParseObject(string msg, out int i, out IntPair p, out int inBraces) {
+    local string c;
+    // TODO: objects, probably store the keys as keys["parentkey.key"] = val
+
+    for(i=i; i < Len(msg); i++) {
+        c = Mid(msg,i,1); //Grab a single character
+        switch (c) {
+        case "{":
+            inBraces++;
+            p.idx = Len(_buf);
+            p.len = 0;
+            return ObjectState;
+
+        case "}":
+            inBraces--;
+            return ArrayDoneState;
+
+        default:
+            //Build up the buffer
+            _buf = _buf $ c;
+            p.len++;
+            break;
+        }
+    }
+}
+
 function int ParseArrayDone(string msg, out int i, out IntPair p, out int inBraces) {
     local string c;
 
@@ -388,7 +457,7 @@ function int ParseArrayDone(string msg, out int i, out IntPair p, out int inBrac
         case "}":
             inBraces--;
             if(inBraces <= 0)
-                return EndingState;
+                return EndJsonState;
 
         default:
             //Build up the buffer
@@ -425,28 +494,39 @@ function ParseQuotes(string msg, out int i, out IntPair p) {
     }
 }
 
-function ParseJson(string msg) {
-    local int i;
-    local IntPair p;
-    local int parsestate;
-    local int inBraces;
-    local JsonMsg data;
 
+function _parse(string tmsg) {
+    StartParse(tmsg);
+    if(! ParseIter(999999)) {
+        log("ERROR: _parse ran too long, i: "$i);
+    }
+    msg = "";
+}
+
+function bool StartParse(string tmsg)
+{
+    local JsonMsg data;
     parsestate = KeyState;
     j = data;// clear the global
 
     //Strip any spaces outside of strings to standardize the input a bit
-    msg = JsonStripSpaces(msg);
+    msg = JsonStripSpaces(tmsg);
     if( Len(msg) < 2 ) {
-        l(".ParseJson IsJson failed!", msg);
-        return;
+        parsestate = EndJsonState;
+        l(".StartParse IsJson failed!", msg);
+        return false;
     }
 
     _buf = "";
+    i = 0;
+    return true;
+}
 
-    //l("ParseJson start", msg);
-    for(i=0; i<999999; i++) {
-        //log("ParseJson state: "$parsestate);
+function bool ParseIter(int num)
+{
+    // returns false when done, so you can easily while loop on it
+    for(num=num+i; i<num; i++) {
+        //log("ParseIter state: "$parsestate);
         switch(parsestate) {
         case KeyState:
             parsestate = ParseKey(msg, i, p, inBraces);
@@ -460,10 +540,13 @@ function ParseJson(string msg) {
         case ArrayDoneState:
             parsestate = ParseArrayDone(msg, i, p, inBraces);
             break;
-        case EndingState:
-            return;
+        case ObjectState:
+            parsestate = ParseObject(msg, i, p, inBraces);
+            break;
+        case EndJsonState:
+            return true;
         }
     }
-    //log("ERROR: ParseJson ran too long, i: "$i);
+    return false;
 }
 // #endregion

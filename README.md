@@ -44,7 +44,7 @@ Epic has taken their master servers offline, which would prevent players from fi
 
 ## Where to Buy
 
-Good luck!  Epic removed the game for sale from everywhere that I'm aware of.
+While Epic has removed the game from all storefronts, it allows OldUnreal to host an installer for the game.  You can find the [OldUnreal Installer here.](https://www.oldunreal.com/downloads/unrealtournament/full-game-installers/)
 
 ## Feedback
   

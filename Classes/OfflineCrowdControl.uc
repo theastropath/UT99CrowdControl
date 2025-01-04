@@ -681,6 +681,9 @@ defaultproperties
     effects(32)=(EffectName="force_redeemer",quantityMin=0,quantityMax=0,durationMin=10,durationMax=30,enabled=true)
     effects(33)=(EffectName="reset_domination_control_points",quantityMin=0,quantityMax=0,durationMin=0,durationMax=0,enabled=true)
     effects(34)=(EffectName="return_ctf_flags",quantityMin=0,quantityMax=0,durationMin=0,durationMax=0,enabled=true)
+    effects(35)=(EffectName="thorns",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
+    effects(36)=(EffectName="jump_boot_madness",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
+    effects(37)=(EffectName="massive_momentum",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
     botNames(0)="Jim"
     botNames(1)="James"
     botNames(2)="Jeremy"

@@ -41,6 +41,15 @@ const FloodTimerDefault = 15;
 var int vampireTimer;
 const VampireTimerDefault = 60;
 
+var int thornsTimer;
+const ThornsTimerDefault = 60;
+
+var int jumpBootTimer;
+const JumpBootTimerDefault = 60;
+
+var int momentumTimer;
+const MomentumTimerDefault = 60;
+
 const MaxAddedBots = 10;
 var Bot added_bots[10];
 var int numAddedBots;
@@ -78,7 +87,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,targetPlayer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,targetPlayer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -177,6 +186,18 @@ simulated function GetEffectList(out string effects[15], out int numEffects)
         effects[i]="Vampire: "$vampireTimer;
         i++;
     }
+    if (thornsTimer > 0) {
+        effects[i]="Thorns: "$thornsTimer;
+        i++;
+    }
+    if (jumpBootTimer > 0) {
+        effects[i]="Jump Boots: "$jumpBootTimer;
+        i++;
+    }
+    if (momentumTimer > 0) {
+        effects[i]="Momentum: "$momentumTimer;
+        i++;
+    }
     if (forceWeaponTimer > 0) {
         effects[i]="Forced "$forcedWeapon.default.ItemName$": "$forceWeaponTimer;
         i++;
@@ -258,6 +279,30 @@ function PeriodicUpdates()
         }
     }  
     
+    if (thornsTimer > 0) {
+        thornsTimer--;
+        if (thornsTimer <= 0) {
+            Broadcast("Your thorns wither away...");
+        }
+    }
+
+    if (jumpBootTimer > 0) {
+        jumpBootTimer--;
+        if (jumpBootTimer <= 0) {
+            Broadcast("Jump Boot Madness ends...");
+        } else {
+            TopUpJumpBoots();
+        }
+    }
+
+    if (momentumTimer > 0) {
+        momentumTimer--;
+        if (momentumTimer <= 0) {
+            Broadcast("Damage imparts normal momentum again...");
+        }
+
+    }
+    
     if (forceWeaponTimer > 0) {
         forceWeaponTimer--;
         if (forceWeaponTimer <= 0) {
@@ -329,6 +374,9 @@ function ScoreKill(Pawn Killer,Pawn Other)
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, 
 						out Vector Momentum, name DamageType)
 {
+    local vector newHitLoc,newMomentum;
+    local String origDamageString;
+    
     //Broadcast(InstigatedBy.PlayerReplicationInfo.PlayerName$" inflicted "$ActualDamage$" damage to "$Victim.PlayerReplicationInfo.PlayerName);
     
     //Check if vampire mode timer is running, and if it is, do the vampire thing
@@ -341,6 +389,33 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
             InstigatedBy.Health = 199;
         }
     }
+
+    if (thornsTimer > 0 && InstigatedBy!=None && Victim!=InstigatedBy && DamageType!='SpecialDamage') {
+        newHitLoc = ((HitLocation-Victim.Location)+instigatedBy.Location) * vect(-1,-1,1);
+        newMomentum = Momentum * vect(-1,-1,1);
+
+        origDamageString = Level.Game.SpecialDamageString;
+        Level.Game.SpecialDamageString = "%o touched "$Victim.PlayerReplicationInfo.PlayerName$"s thorns";
+
+        InstigatedBy.TakeDamage(
+            ActualDamage * 0.5,
+            InstigatedBy,
+            newHitLoc,
+            newMomentum,
+            'SpecialDamage'
+        );
+
+        Level.Game.SpecialDamageString = origDamageString;
+    }
+
+    if (momentumTimer > 0) {
+        if (VSize(Momentum)<1){
+            //apply some baseline momentum to work from
+            Momentum = Normal(Victim.Location - InstigatedBy.Location) * ActualDamage * 2;
+        }
+        Momentum = Momentum * 25;
+    }
+
 }
 
 
@@ -1265,7 +1340,8 @@ function int GottaGoSlow(String viewer, int duration)
 
 function int ThanosSnap(String viewer)
 {
-    local Pawn p;
+    local Pawn p, pawns[50];
+    local int i, num, num_pawns, num_to_kill;
     local String origDamageString;
     
     origDamageString = Level.Game.SpecialDamageString;
@@ -1275,18 +1351,29 @@ function int ThanosSnap(String viewer)
         if (p.IsA('StationaryPawn')){
             continue;
         }
-        if (Rand(2)==0){ //50% chance of death
-            P.TakeDamage
+        pawns[num_pawns++]=p;
+    }
+
+    if (num_pawns<2){
+        return TempFail;
+    }
+
+    num_to_kill = num_pawns/2;
+
+    for (i=0;i<num_to_kill;i++){
+        num=Rand(num_pawns);
+        pawns[num].TakeDamage
             (
                 10000,
-                P,
-                P.Location,
+                pawns[num],
+                pawns[num].Location,
                 Vect(0,0,0),
-                'SpecialDamage'				
+                'SpecialDamage'
             );
-        }
+        pawns[num] = pawns[num_pawns-1];
+        num_pawns--;
     }
-    
+
     Level.Game.SpecialDamageString = origDamageString;
     
     Broadcast(viewer$" snapped their fingers!");
@@ -1731,6 +1818,10 @@ function int StartVampireMode(string viewer, int duration)
     if (vampireTimer>0) {
         return TempFail;
     }
+
+    if (thornsTimer>0) {
+        return TempFail;
+    }
     Broadcast(viewer@"made everyone have a taste for blood!");
     if (duration==0){
         duration = VampireTimerDefault;
@@ -1739,6 +1830,66 @@ function int StartVampireMode(string viewer, int duration)
     return Success;
 }
 
+function int StartThornsMode(string viewer, int duration)
+{
+    if (thornsTimer>0) {
+        return TempFail;
+    }
+
+    if (vampireTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"gave everyone thorns!");
+    if (duration==0){
+        duration = ThornsTimerDefault;
+    }
+    thornsTimer = duration;
+    return Success;
+}
+
+function int StartMomentumMode(string viewer, int duration)
+{
+    if (momentumTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"made all damage impart massive momentum!");
+    if (duration==0){
+        duration = MomentumTimerDefault;
+    }
+    momentumTimer = duration;
+    return Success;
+}
+
+function int StartJumpBootMadness(string viewer, int duration)
+{
+    if (jumpBootTimer>0) {
+        return TempFail;
+    }
+
+    TopUpJumpBoots();
+    Broadcast(viewer@"decided it was time for Jump Boot Madness!");
+    if (duration==0){
+        duration = JumpBootTimerDefault;
+    }
+    jumpBootTimer = duration;
+    return Success;
+}
+
+function TopUpJumpBoots()
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            if (p.FindInventoryType(class'UT_JumpBoots')==None){ //Only give them boots if they don't have them
+                GiveInventoryToPawn(class'UT_JumpBoots',p);
+            }
+        }
+    }
+
+}
 
 function ForceAllPawnsToSpecificWeapon(class<Weapon> weaponClass)
 {
@@ -1920,7 +2071,13 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
         case "reset_domination_control_points":
             return ResetDominationControlPoints(viewer);
         case "return_ctf_flags":
-            return ReturnCTFFlags(viewer);        
+            return ReturnCTFFlags(viewer);
+        case "thorns":  //Inflicting damage damages you 50% (Can grab damage via MutatorTakeDamage)
+            return StartThornsMode(viewer, duration);
+        case "jump_boot_madness":
+            return StartJumpBootMadness(viewer, duration);
+        case "massive_momentum":
+            return StartMomentumMode(viewer, duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

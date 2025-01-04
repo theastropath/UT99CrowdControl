@@ -50,7 +50,7 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Just Skin and Bones", "skin_and_bones"){Price = 4, Description = "All players become extremely skinny!", Duration=60},
         new Effect("Gotta Go Fast", "gotta_go_fast"){Price = 10, Description = "It's extra fast mode!", Duration=60},
         new Effect("Gotta Go Slow", "gotta_go_slow"){Price = 10, Description = "It's extra slow mode!", Duration=15},
-        new Effect("Swap Two Players Positions", "swap_player_position"){Price = 10, Description = "2 players swap positions on the map!"},
+        new Effect("Swap All Players Positions", "swap_player_position"){Price = 10, Description = "2 players swap positions on the map!"},
         new Effect("Nudge All Players", "nudge"){Price = 5, Description = "Push the players around!"},
         new Effect("Ice Physics", "ice_physics"){Price = 10, Description = "Summon frosty floors!", Duration=60},
         new Effect("Low Gravity", "low_grav"){Price = 5, Description = "Low gravity means players jump higher!", Duration=60},
@@ -60,6 +60,8 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Spawn a Defending Bot (One Death)", "spawn_a_bot_defend"){Price = 10, Description = "This will spawn a bot on whatever team is has the least amount of players with orders to defend their base"},
         new Effect("Reset Domination Control Points", "reset_domination_control_points"){Price = 5, Description = "This will reset all control points in Domination Mode to neutral"},
         new Effect("Return Flags", "return_ctf_flags"){Price = 5, Description = "In Capture the Flag Mode, this will return all flags to their base"},
+        new Effect("Jump Boot Madness", "jump_boot_madness"){Price = 3, Description = "Give all players jump boots and keep them topped up so they can jump really high!", Duration=60},
+        new Effect("Massive Momentum", "massive_momentum"){Price = 3, Description = "All damage imparts significantly more momentum to the target!", Duration=60},
         
         ////////////////////////////////////////////////////////////////
         
@@ -74,7 +76,7 @@ public class UnrealTournament99 : SimpleTCPPack
             Description = "Give a little health!"
         },
         new Effect("Sudden Death", "sudden_death") { Category = "Health & Ammo", Price = 10, Description = "Activate sudden death mode!" },
-        new Effect("Thanos Snap", "thanos") { Category = "Health & Ammo", Price = 15, Description = "Each player has a 50% chance of instantly being killed!" },
+        new Effect("Thanos Snap", "thanos") { Category = "Health & Ammo", Price = 15, Description = "Half of the players in the match get obliterated!" },
         new Effect("Vampiric Attacks", "vampire_mode") { Category = "Health & Ammo", Price = 10, Description = "All attacks by players sap some life, healing the player!", Duration=60 },
         new Effect("Give Shield Belt to Last Place", "last_place_shield") { Category = "Health & Ammo", Price = 5, Description = "Help out that last place player!" },
         new Effect("Blue (Redeemer) Shell", "blue_redeemer_shell") { Category = "Health & Ammo", Price = 15, Description = "Drops a redeemer explosion on the player in first place!" },
@@ -114,5 +116,6 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Melee Only!", "melee_only") { Category = "Weapons & Damage", Price = 10, Description = "Never mind these guns, it's punching time!", Duration=60 },
         new Effect("Bonus Damage for Last Place", "last_place_bonus_dmg") { Category = "Weapons & Damage", Price = 5, Description = "Help out the last place player and grant them bonus damage!" },
         new Effect("All Players Drop Current Weapon", "drop_selected_item") { Category = "Weapons & Damage", Price = 10, Description = "Who needs this weapon anyway..." }
+        new Effect("Thorns", "thorns") { Category = "Weapons & Damage", Price = 3, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60}
     };
 }

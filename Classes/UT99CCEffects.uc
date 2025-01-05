@@ -47,6 +47,19 @@ const ThornsTimerDefault = 60;
 var int jumpBootTimer;
 const JumpBootTimerDefault = 60;
 
+var int bounceTimer;
+const BounceTimerDefault = 60;
+var Vector BouncyCastleVelocity;
+
+var int redLightTimer;
+var int indLightTime;
+var bool redLightGrace;
+const RedLightTimerDefault = 60;
+const LightMinimumTime = 3;
+const RedLightMaxTime = 7;
+const GreenLightMaxTime = 20;
+var bool greenLight;
+
 var int momentumTimer;
 const MomentumTimerDefault = 60;
 
@@ -87,7 +100,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,targetPlayer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -102,7 +115,8 @@ function Init(Mutator baseMut)
     NormalGravity=vect(0,0,-950);
     FloatGrav=vect(0,0,0.15);
     MoonGrav=vect(0,0,-100);  
-    
+    BouncyCastleVelocity=vect(0,0,600);  
+
     for (i=0;i<MaxAddedBots;i++){
         added_bots[i]=None;
     }
@@ -198,6 +212,19 @@ simulated function GetEffectList(out string effects[15], out int numEffects)
         effects[i]="Momentum: "$momentumTimer;
         i++;
     }
+    if (bounceTimer > 0) {
+        effects[i]="Bouncy Castle: "$bounceTimer;
+        i++;
+    }
+    if (redLightTimer > 0) {
+        effects[i]="Red Light, Green Light: "$redLightTimer;
+        if (greenLight){
+            effects[i]=effects[i] $ " (GREEN!)";
+        } else {
+            effects[i]=effects[i] $ " (RED!)";
+        }
+        i++;
+    }
     if (forceWeaponTimer > 0) {
         effects[i]="Forced "$forcedWeapon.default.ItemName$": "$forceWeaponTimer;
         i++;
@@ -213,6 +240,8 @@ simulated function GetEffectList(out string effects[15], out int numEffects)
 //One Second timer updates
 function PeriodicUpdates()
 {
+    local bool change;
+
     if (behindTimer > 0) {
         behindTimer--;
         if (behindTimer <= 0) {
@@ -300,9 +329,53 @@ function PeriodicUpdates()
         if (momentumTimer <= 0) {
             Broadcast("Damage imparts normal momentum again...");
         }
-
     }
-    
+
+    if (bounceTimer > 0) {
+        bounceTimer--;
+        if (bounceTimer <= 0) {
+            Broadcast("The bouncy castle disappeared...");
+        } else if ((bounceTimer % 2) == 0){
+            BounceAllPlayers();
+        }
+    }
+
+    if (redLightTimer > 0) {
+        redLightTimer--;
+        indLightTime++;
+        redLightGrace=false;
+        if (redLightTimer <= 0) {
+            Broadcast("'Red Light, Green Light' is over!");
+            redLightTimer=0;
+            indLightTime=0;
+        } else {
+            if (indLightTime>LightMinimumTime){
+                change=false;
+
+                if (greenLight && indLightTime>GreenLightMaxTime) {
+                    change = true;
+                }
+                if (!greenLight && indLightTime>RedLightMaxTime) {
+                    change = true;
+                }
+                if (Rand(10)==0) { //10% chance
+                    change = true;
+                }
+
+                if (change){ 
+                    indLightTime=0;
+                    greenLight=!greenLight; //Toggle light
+                    if (greenLight){
+                        Broadcast("GREEN LIGHT!");
+                    } else {
+                        redLightGrace=true;
+                        Broadcast("RED LIGHT!");
+                    }
+                }
+            }
+        }
+    }  
+
     if (forceWeaponTimer > 0) {
         forceWeaponTimer--;
         if (forceWeaponTimer <= 0) {
@@ -329,7 +402,11 @@ function ContinuousUpdates()
         TopUpWeaponAmmoAllPawns(forcedWeapon);
         ForceAllPawnsToSpecificWeapon(forcedWeapon);  
     }
-    
+
+    if (redLightTimer > 0 && greenLight==false && redLightGrace==false) {
+        CheckRedLightMovement();
+    }
+
     if (game!=None){
         if (numAddedBots==0 || Level.Game.bGameEnded){
             game.MinPlayers = cfgMinPlayers;
@@ -337,6 +414,46 @@ function ContinuousUpdates()
             game.MinPlayers = Max(cfgMinPlayers+numAddedBots, game.NumPlayers + numAddedBots);
         }
     }
+}
+
+function CheckRedLightMovement()
+{
+    local Pawn p;
+    local String origDamageString;
+    local TeamGamePlus tg;
+    local bool prevScoreTeamKills;
+
+
+    tg = TeamGamePlus(Level.Game);
+    if (tg!=None){
+        prevScoreTeamKills=tg.bScoreTeamKills;
+        tg.bScoreTeamKills=false;
+    }
+
+    foreach AllActors(class'Pawn',p){
+        if (p.IsA('StationaryPawn') || p.Health<=0) continue;
+
+        origDamageString = Level.Game.SpecialDamageString;
+        Level.Game.SpecialDamageString = "%o moved while the light was RED!";
+
+        if (VSize(p.Velocity)>10){
+            p.TakeDamage
+            (
+                10000,
+                p,
+                p.Location,
+                Vect(0,0,0),
+                'SpecialDamage'
+            );
+        }
+        Level.Game.SpecialDamageString = origDamageString;
+    }
+
+
+    if (tg!=None){
+        tg.bScoreTeamKills=prevScoreTeamKills;
+    }
+
 }
 
 
@@ -1877,6 +1994,64 @@ function int StartJumpBootMadness(string viewer, int duration)
     return Success;
 }
 
+function int StartBounce(string viewer, int duration)
+{
+    if (redLightTimer>0) {
+        return TempFail;
+    }
+    if (bounceTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"threw everyone into the bouncy castle!");
+
+    if (duration==0){
+        duration = BounceTimerDefault;
+    }
+    bounceTimer = duration;
+    return Success;
+}
+
+function BounceAllPlayers()
+{
+    local Pawn P;
+    
+    foreach AllActors(class'Pawn',P) {
+        if ( (P == None) || (P.Physics == PHYS_None) || p.Base==None || p.HeadRegion.Zone.bWaterZone) { continue; }
+
+        if ( P.Physics == PHYS_Walking ){
+            P.SetPhysics(PHYS_Falling);
+        }
+        P.Velocity.Z +=  BouncyCastleVelocity.Z;
+        //P.Acceleration = vect(0,0,0);
+    }    
+}
+
+function int StartRedLightGreenLight(string viewer, int duration)
+{
+    if (bounceTimer>0) {
+        return TempFail;
+    }
+    if (iceTimer>0) {
+        return TempFail;
+    }
+    if (redLightTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"wants to play 'Red Light, Green Light'!");
+
+    if (duration==0){
+        duration = RedLightTimerDefault;
+    }
+
+    redLightTimer = duration;
+    indLightTime=0;
+    greenLight=True;
+
+    return Success;
+}
+
 function TopUpJumpBoots()
 {
     local Pawn p;
@@ -2078,6 +2253,10 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return StartJumpBootMadness(viewer, duration);
         case "massive_momentum":
             return StartMomentumMode(viewer, duration);
+        case "bouncy_castle":
+            return StartBounce(viewer, duration); 
+        case "red_light_green_light":
+            return StartRedLightGreenLight(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

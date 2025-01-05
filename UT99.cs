@@ -62,7 +62,10 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Return Flags", "return_ctf_flags"){Price = 5, Description = "In Capture the Flag Mode, this will return all flags to their base"},
         new Effect("Jump Boot Madness", "jump_boot_madness"){Price = 3, Description = "Give all players jump boots and keep them topped up so they can jump really high!", Duration=60},
         new Effect("Massive Momentum", "massive_momentum"){Price = 3, Description = "All damage imparts significantly more momentum to the target!", Duration=60},
-        
+        new Effect("Bouncy Castle", "bouncy_castle"){Price = 5, Description = "Everyone gets periodically bounced up into the air!", Duration=60},
+        new Effect("Red Light, Green Light", "red_light_green_light"){Price = 5, Description = "The light randomly changes between Red and Green!  Move while the light is red and... KABOOM!", Duration=60},
+
+
         ////////////////////////////////////////////////////////////////
         
         //new Effect("Health and Armor","health",ItemKind.Folder),

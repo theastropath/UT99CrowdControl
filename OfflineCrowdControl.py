@@ -71,7 +71,6 @@ def pickEffect():
     #effects.append(("first_place_slow",None))
     #return random.choice(effects)            #For testing a small selection of effects
 
-    
     effects.append(None)
     effects.append(None)
     effects.append(None)
@@ -137,6 +136,13 @@ def pickEffect():
 
     effects.append(("return_ctf_flags",None))
     effects.append(("return_ctf_flags",None))
+
+    effects.append(("thorns",None))
+    effects.append(("jump_boot_madness",None))
+    effects.append(("massive_momentum",None))
+    effects.append(("bouncy_castle",None))
+    effects.append(("red_light_green_light",None))
+    effects.append(("random_weapon_swap",None))
 
     return random.choice(effects)
 

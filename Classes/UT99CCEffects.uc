@@ -1768,6 +1768,9 @@ function int EnableMoonPhysics(string viewer, int duration)
 
 function int StartMeleeOnlyTime(String viewer, int duration)
 {
+    if (weaponSwapTimer > 0) {
+        return TempFail;
+    }
     if (meleeTimer > 0) {
         return TempFail;
     }
@@ -2071,6 +2074,10 @@ function int StartRedLightGreenLight(string viewer, int duration)
 function int StartWeaponSwapMode(string viewer, int duration)
 {
     if (forceWeaponTimer > 0) {
+        return TempFail;
+    }
+
+    if (meleeTimer > 0) {
         return TempFail;
     }
 

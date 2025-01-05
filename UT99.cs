@@ -50,7 +50,7 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Just Skin and Bones", "skin_and_bones"){Price = 4, Description = "All players become extremely skinny!", Duration=60},
         new Effect("Gotta Go Fast", "gotta_go_fast"){Price = 10, Description = "It's extra fast mode!", Duration=60},
         new Effect("Gotta Go Slow", "gotta_go_slow"){Price = 10, Description = "It's extra slow mode!", Duration=15},
-        new Effect("Swap All Players Positions", "swap_player_position"){Price = 10, Description = "2 players swap positions on the map!"},
+        new Effect("Swap All Players Positions", "swap_player_position"){Price = 10, Description = "All players swap positions with other players on the map!"},
         new Effect("Nudge All Players", "nudge"){Price = 5, Description = "Push the players around!"},
         new Effect("Ice Physics", "ice_physics"){Price = 10, Description = "Summon frosty floors!", Duration=60},
         new Effect("Low Gravity", "low_grav"){Price = 5, Description = "Low gravity means players jump higher!", Duration=60},
@@ -62,8 +62,8 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Return Flags", "return_ctf_flags"){Price = 5, Description = "In Capture the Flag Mode, this will return all flags to their base"},
         new Effect("Jump Boot Madness", "jump_boot_madness"){Price = 3, Description = "Give all players jump boots and keep them topped up so they can jump really high!", Duration=60},
         new Effect("Massive Momentum", "massive_momentum"){Price = 3, Description = "All damage imparts significantly more momentum to the target!", Duration=60},
-        new Effect("Bouncy Castle", "bouncy_castle"){Price = 5, Description = "Everyone gets periodically bounced up into the air!", Duration=60},
-        new Effect("Red Light, Green Light", "red_light_green_light"){Price = 5, Description = "The light randomly changes between Red and Green!  Move while the light is red and... KABOOM!", Duration=60},
+        new Effect("Bouncy Castle", "bouncy_castle"){Price = 3, Description = "Everyone gets periodically bounced up into the air!", Duration=60},
+        new Effect("Red Light, Green Light", "red_light_green_light"){Price = 10, Description = "The light randomly changes between Red and Green!  Move while the light is red and... KABOOM!", Duration=60},
 
 
         ////////////////////////////////////////////////////////////////
@@ -119,6 +119,7 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Melee Only!", "melee_only") { Category = "Weapons & Damage", Price = 10, Description = "Never mind these guns, it's punching time!", Duration=60 },
         new Effect("Bonus Damage for Last Place", "last_place_bonus_dmg") { Category = "Weapons & Damage", Price = 5, Description = "Help out the last place player and grant them bonus damage!" },
         new Effect("All Players Drop Current Weapon", "drop_selected_item") { Category = "Weapons & Damage", Price = 10, Description = "Who needs this weapon anyway..." }
-        new Effect("Thorns", "thorns") { Category = "Weapons & Damage", Price = 3, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60}
+        new Effect("Thorns", "thorns") { Category = "Weapons & Damage", Price = 5, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60}
+        new Effect("Weapon Chaos", "random_weapon_swap") { Category = "Weapons & Damage", Price = 5, Description = "All players start randomly switching weapons!", Duration=60}
     };
 }

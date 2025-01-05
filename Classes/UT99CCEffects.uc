@@ -63,6 +63,9 @@ var bool greenLight;
 var int momentumTimer;
 const MomentumTimerDefault = 60;
 
+var int weaponSwapTimer;
+const WeaponSwapTimerDefault = 60;
+
 const MaxAddedBots = 10;
 var Bot added_bots[10];
 var int numAddedBots;
@@ -100,7 +103,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -152,7 +155,7 @@ function Broadcast(string msg)
 }
 
 
-simulated function GetEffectList(out string effects[15], out int numEffects)
+simulated function GetEffectList(out string effects[25], out int numEffects)
 {
     local int i;
 
@@ -223,6 +226,10 @@ simulated function GetEffectList(out string effects[15], out int numEffects)
         } else {
             effects[i]=effects[i] $ " (RED!)";
         }
+        i++;
+    }
+    if (weaponSwapTimer > 0) {
+        effects[i]="Weapon Swap: "$weaponSwapTimer;
         i++;
     }
     if (forceWeaponTimer > 0) {
@@ -337,6 +344,15 @@ function PeriodicUpdates()
             Broadcast("The bouncy castle disappeared...");
         } else if ((bounceTimer % 2) == 0){
             BounceAllPlayers();
+        }
+    }
+
+    if (weaponSwapTimer > 0) {
+        weaponSwapTimer--;
+        if (weaponSwapTimer <= 0) {
+            Broadcast("Weapon switching ends...");
+        } else {
+            CheckWeaponSwapAllPlayers();
         }
     }
 
@@ -2052,6 +2068,69 @@ function int StartRedLightGreenLight(string viewer, int duration)
     return Success;
 }
 
+function int StartWeaponSwapMode(string viewer, int duration)
+{
+    if (forceWeaponTimer > 0) {
+        return TempFail;
+    }
+
+    if (weaponSwapTimer > 0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"wants everyone to start switching weapons!");
+    if (duration==0){
+        duration = WeaponSwapTimerDefault;
+    }
+    weaponSwapTimer = duration;
+    return Success;
+}
+
+function CheckWeaponSwapAllPlayers()
+{
+    local Pawn p;
+
+    //Broadcast("Checking all pawns for weapon swap time");
+
+    foreach AllActors(class'Pawn',p) {
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            //Broadcast("Checking if "$p.PlayerReplicationInfo.PlayerName$" will swap");
+            if (Rand(6)==0){ //~16% chance every second to switch weapons (Feels about right)
+                PawnSwitchToRandomWeapon(p);
+            }
+        }
+    }
+}
+
+function PawnSwitchToRandomWeapon(Pawn p)
+{
+    local Inventory options[20];
+    local int numOptions;
+    local Inventory curInv;
+    //Broadcast("Switching weapon for "$p.PlayerReplicationInfo.PlayerName);
+    for (curInv=p.Inventory;curInv!=None;curInv=curInv.Inventory) {
+        if (Weapon(curInv)==None) continue; //Only select from weapons
+        if (curInv == p.SelectedItem) continue; //Don't select the same thing as currently selected
+        if (curInv == p.Weapon) continue; //Don't select the current weapon (should be same as above, but...)
+        if (Translocator(curInv)!=None) continue; //Don't randomly switch to translocator
+        if (Weapon(curInv).bMeleeWeapon==true) continue; //Don't switch to melee weapons
+
+        options[numOptions++]=curInv;
+    }
+
+    //Broadcast("Got "$numOptions$" weapon choices for "$p.PlayerReplicationInfo.PlayerName);
+
+    if (numOptions==0) return;
+
+    p.SelectedItem=options[Rand(numOptions)];
+
+    p.Weapon.GotoState('DownWeapon');
+    p.PendingWeapon = None;
+    p.Weapon = Weapon(p.SelectedItem);
+    p.Weapon.BringUp();
+
+}
+
 function TopUpJumpBoots()
 {
     local Pawn p;
@@ -2087,6 +2166,9 @@ function int ForceWeaponUse(String viewer, String weaponName, int duration)
         return TempFail;
     }
     if (meleeTimer > 0) {
+        return TempFail;
+    }
+    if (weaponSwapTimer > 0) {
         return TempFail;
     }
     
@@ -2243,20 +2325,22 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return ForceWeaponUse(viewer,"SuperShockRifle",duration);        
         case "force_redeemer": //Give everybody a redeemer, then force them to use it for the duration.  Ammo tops up if run out  
             return ForceWeaponUse(viewer,"WarHeadLauncher",duration);
-        case "reset_domination_control_points":
+        case "reset_domination_control_points": //Force the control points in Domination mode back to uncontrolled
             return ResetDominationControlPoints(viewer);
-        case "return_ctf_flags":
+        case "return_ctf_flags":  //Send any CTF flags back to their safe location in base
             return ReturnCTFFlags(viewer);
         case "thorns":  //Inflicting damage damages you 50% (Can grab damage via MutatorTakeDamage)
             return StartThornsMode(viewer, duration);
-        case "jump_boot_madness":
+        case "jump_boot_madness":  //Give all players jump boots, and keep them topped up on them for the duration of the effect
             return StartJumpBootMadness(viewer, duration);
-        case "massive_momentum":
+        case "massive_momentum": //Weapons impart significantly more momentum to those hit by them
             return StartMomentumMode(viewer, duration);
-        case "bouncy_castle":
+        case "bouncy_castle": //Every two seconds, bounce any players on the ground up into the air
             return StartBounce(viewer, duration); 
-        case "red_light_green_light":
+        case "red_light_green_light": //Randomly switch between red light and green light modes.  Moving during red light kills the player
             return StartRedLightGreenLight(viewer,duration);
+        case "random_weapon_swap": //For the duration of the effect, there is a random chance every second of switching weapons
+            return StartWeaponSwapMode(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

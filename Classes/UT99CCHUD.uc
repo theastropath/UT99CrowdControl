@@ -8,7 +8,7 @@ simulated event PostRender( canvas Canvas )
     local int effectNum;
     local int baseYPos;
     local int fontHeight;
-    local string effects[15];
+    local string effects[25];
     local int numEffects;
 
     baseYPos=5*Canvas.ClipY/7 + Canvas.ClipY/401;

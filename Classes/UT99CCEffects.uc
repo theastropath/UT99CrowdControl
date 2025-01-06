@@ -523,6 +523,14 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
         }
     }
 
+    if (momentumTimer > 0) {
+        if (VSize(Momentum)<1){
+            //apply some baseline momentum to work from
+            Momentum = Normal(Victim.Location - InstigatedBy.Location) * ActualDamage * 2;
+        }
+        Momentum = Momentum * 25;
+    }
+
     if (thornsTimer > 0 && InstigatedBy!=None && Victim!=InstigatedBy && DamageType!='SpecialDamage') {
         newHitLoc = ((HitLocation-Victim.Location)+instigatedBy.Location) * vect(-1,-1,1);
         newMomentum = Momentum * vect(-1,-1,1);
@@ -540,15 +548,6 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
         Level.Game.SpecialDamageString = origDamageString;
     }
-
-    if (momentumTimer > 0) {
-        if (VSize(Momentum)<1){
-            //apply some baseline momentum to work from
-            Momentum = Normal(Victim.Location - InstigatedBy.Location) * ActualDamage * 2;
-        }
-        Momentum = Momentum * 25;
-    }
-
 }
 
 

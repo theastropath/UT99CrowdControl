@@ -4,6 +4,8 @@ using CrowdControl.Common;
 using CrowdControl.Games.Packs;
 using ConnectorType = CrowdControl.Common.ConnectorType;
 
+namespace CrowdControl.Games.Packs.UnrealTournament99;
+
 public class UnrealTournament99 : SimpleTCPPack
 {
     public override string Host => "0.0.0.0";
@@ -118,8 +120,8 @@ public class UnrealTournament99 : SimpleTCPPack
         new Effect("Bonus Damage for All", "bonus_dmg") { Category = "Weapons & Damage", Price = 5, Description = "Pump up the damage on all players" },
         new Effect("Melee Only!", "melee_only") { Category = "Weapons & Damage", Price = 10, Description = "Never mind these guns, it's punching time!", Duration=60 },
         new Effect("Bonus Damage for Last Place", "last_place_bonus_dmg") { Category = "Weapons & Damage", Price = 5, Description = "Help out the last place player and grant them bonus damage!" },
-        new Effect("All Players Drop Current Weapon", "drop_selected_item") { Category = "Weapons & Damage", Price = 10, Description = "Who needs this weapon anyway..." }
-        new Effect("Thorns", "thorns") { Category = "Weapons & Damage", Price = 5, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60}
+        new Effect("All Players Drop Current Weapon", "drop_selected_item") { Category = "Weapons & Damage", Price = 10, Description = "Who needs this weapon anyway..." },
+        new Effect("Thorns", "thorns") { Category = "Weapons & Damage", Price = 5, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60},
         new Effect("Weapon Chaos", "random_weapon_swap") { Category = "Weapons & Damage", Price = 5, Description = "All players start randomly switching weapons!", Duration=60}
     };
 }

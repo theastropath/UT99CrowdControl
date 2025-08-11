@@ -4,15 +4,17 @@ This is a mutator which can be used to connect to the Crowd Control service, whi
 Since only one instance of Crowd Control can be attached at a time, most effects apply to all players on the server simultaneously.  A few apply to the player in first/last place, and a few more apply to random players.
 
 
+## Installing
+
+Either compile the .u file (see below) or [download it from the Releases page](https://github.com/theastropath/UT99CrowdControl/releases/latest) and put it along with the .int file into the System folder of your Unreal Tournament installation.  The mutator should then be available to use in the Mutators menu.
+
+
 ## Compiling
+
+**Note**: If you are just trying to play this mod, you should not compile it yourself!  [Check out the Releases page instead!](https://github.com/theastropath/UT99CrowdControl/releases/latest)
 
 I have been compiling this project using UMake (https://ut99.org/viewtopic.php?f=58&t=14044).  Simply put the contents of this repository into a UT99CrowdControl folder in the main Unreal Tournament install directory, then drag the files inside the Classes folder onto UMake.
 The compiled .u file will be put into the System folder.
-
-
-## Installing
-
-Either compile the .u file or download it from the Releases page and put it along with the .int file into the System folder of your Unreal Tournament installation.  The mutator should then be available to use in the Mutators menu.
 
 
 ## Usage

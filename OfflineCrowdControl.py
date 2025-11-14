@@ -71,10 +71,6 @@ def pickEffect():
     #effects.append(("first_place_slow",None))
     #return random.choice(effects)            #For testing a small selection of effects
 
-    effects.append(("explosive_corpses",None))
-
-    return random.choice(effects)
-
     effects.append(None)
     effects.append(None)
     effects.append(None)

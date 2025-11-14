@@ -1,4 +1,5 @@
-﻿using ConnectorLib.SimpleTCP;
+﻿﻿using System.Diagnostics.CodeAnalysis;
+using ConnectorLib.SimpleTCP;
 using CrowdControl.Common;
 using ConnectorType = CrowdControl.Common.ConnectorType;
 
@@ -10,7 +11,8 @@ public class UnrealTournament99 : SimpleTCPPack<SimpleTCPServerConnector>
 
     public override ushort Port => 43384;
 
-    public override ISimpleTCPPack.MessageFormat MessageFormat => ISimpleTCPPack.MessageFormat.CrowdControlLegacy;
+    [SuppressMessage("CrowdControl.PackMetadata", "CC1009:Message Format Property")]
+    public override ISimpleTCPPack.MessageFormatType MessageFormat => ISimpleTCPPack.MessageFormatType.CrowdControlLegacy;
 
     public UnrealTournament99(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler) { }
 
@@ -64,6 +66,7 @@ public class UnrealTournament99 : SimpleTCPPack<SimpleTCPServerConnector>
         new("Massive Momentum", "massive_momentum"){Price = 3, Description = "All damage imparts significantly more momentum to the target!", Duration=60},
         new("Bouncy Castle", "bouncy_castle"){Price = 3, Description = "Everyone gets periodically bounced up into the air!", Duration=60},
         new("Red Light, Green Light", "red_light_green_light"){Price = 10, Description = "The light randomly changes between Red and Green!  Move while the light is red and... KABOOM!", Duration=60},
+        new("Explosive Corpses", "explosive_corpses"){Price = 5, Description = "Players explode when they die!", Duration=60},
 
 
         ////////////////////////////////////////////////////////////////
@@ -120,6 +123,7 @@ public class UnrealTournament99 : SimpleTCPPack<SimpleTCPServerConnector>
         new("Bonus Damage for Last Place", "last_place_bonus_dmg") { Category = "Weapons & Damage", Price = 5, Description = "Help out the last place player and grant them bonus damage!" },
         new("All Players Drop Current Weapon", "drop_selected_item") { Category = "Weapons & Damage", Price = 10, Description = "Who needs this weapon anyway..." },
         new("Thorns", "thorns") { Category = "Weapons & Damage", Price = 5, Description = "All players grow thorns, inflicting damage back on those who are dealing damage.", Duration=60},
-        new("Weapon Chaos", "random_weapon_swap") { Category = "Weapons & Damage", Price = 5, Description = "All players start randomly switching weapons!", Duration=60}
+        new("Weapon Chaos", "random_weapon_swap") { Category = "Weapons & Damage", Price = 5, Description = "All players start randomly switching weapons!", Duration=60},
+        new("Infinite Razors", "infinite_razor") { Category = "Weapons & Damage", Price = 5, Description = "All razors fired from the Ripper gun bounce forever while the effect is active.", Duration=60}
     };
 }

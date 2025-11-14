@@ -74,6 +74,12 @@ var int forceWeaponTimer;
 const ForceWeaponTimerDefault = 60;
 var class<Weapon> forcedWeapon;
 
+var int infiniteRazorTimer;
+const InfiniteRazorTimerDefault = 60;
+
+var int explosiveCorpseTimer;
+const explosiveCorpseTimerDefault = 60;
+
 struct ZoneFriction
 {
     var name zonename;
@@ -103,7 +109,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -234,6 +240,14 @@ simulated function GetEffectList(out string effects[25], out int numEffects)
     }
     if (forceWeaponTimer > 0) {
         effects[i]="Forced "$forcedWeapon.default.ItemName$": "$forceWeaponTimer;
+        i++;
+    }
+    if (infiniteRazorTimer > 0) {
+        effects[i]="Infinite Razors: "$infiniteRazorTimer;
+        i++;
+    }
+    if (explosiveCorpseTimer > 0) {
+        effects[i]="Explosive Corpses: "$explosiveCorpseTimer;
         i++;
     }
     if (numAddedBots > 0) {
@@ -400,6 +414,23 @@ function PeriodicUpdates()
         }
     }  
 
+    if (infiniteRazorTimer > 0) {
+        infiniteRazorTimer--;
+        if (infiniteRazorTimer <= 0) {
+            StopInfiniteRazors();
+            Broadcast("Razors no longer bounce forever...");
+        } else {
+            StartInfiniteRazors(); //Re-up any recently launched razors
+        }
+    }
+
+    if (explosiveCorpseTimer > 0) {
+        explosiveCorpseTimer--;
+        if (explosiveCorpseTimer <= 0) {
+            Broadcast("Corpses no longer explode...");
+        }
+    }
+
 }
 
 //Updates every tenth of a second
@@ -423,12 +454,36 @@ function ContinuousUpdates()
         CheckRedLightMovement();
     }
 
+    if (explosiveCorpseTimer > 0) {
+        CheckExplodingCorpses();
+    }
+
     if (game!=None){
         if (numAddedBots==0 || Level.Game.bGameEnded){
             game.MinPlayers = cfgMinPlayers;
         } else {
             game.MinPlayers = Max(cfgMinPlayers+numAddedBots, game.NumPlayers + numAddedBots);
         }
+    }
+}
+
+function CheckExplodingCorpses()
+{
+    local carcass carc;
+    local UT_SpriteBallExplosion s;
+
+    foreach AllActors(class'carcass',carc){
+        if (carc.bHidden) continue; //gibbing carcasses are hidden
+        if (UTHumanCarcass(carc)==None) continue; //Only explode actual full carcasses
+
+        s = spawn(class'UT_SpriteBallExplosion',,,carc.Location);	
+        s.RemoteRole = ROLE_None;
+
+        //Same explosion as a rocket
+        carc.HurtRadius(75 ,220.0, 'RocketDeath', 80000, carc.Location );
+        carc.MakeNoise(1.0);
+
+        carc.ChunkUp(200); //Gibbing takes time, but sets the carcass to hidden
     }
 }
 
@@ -1776,6 +1831,10 @@ function int StartMeleeOnlyTime(String viewer, int duration)
     if (forceWeaponTimer>0) {
         return TempFail;
     }    
+    if (infiniteRazorTimer>0) {
+        return TempFail;
+    }
+
     ForceAllPawnsToMelee();
     
     Broadcast(viewer@"requests melee weapons only!");
@@ -2179,7 +2238,14 @@ function int ForceWeaponUse(String viewer, String weaponName, int duration)
     }
     
     weaponClass = GetWeaponClassByName(weaponName);
-    
+
+    //Infinite Razors only blocks forced weapons that aren't the ripper
+    if (infiniteRazorTimer>0) {
+        if (weaponClass!=class'ripper'){
+            return TempFail;
+        }
+    }
+
     foreach AllActors(class'Pawn',p) {  //Probably could just iterate over PlayerPawns, but...
         if (p.IsA('StationaryPawn') || p.IsA('Spectator') || p.Health<=0){
             continue;
@@ -2254,6 +2320,75 @@ function int ReturnCTFFlags(String viewer)
         return TempFail;
     }
     Broadcast(viewer$" returned the flags!");
+    return Success;
+}
+
+function StartInfiniteRazors()
+{
+    local Razor2 raz;
+
+    foreach AllActors(class'Razor2',raz){
+        if (raz.NumWallHits>0 || raz.LifeSpan < 10.0){
+            raz.NumWallHits=-99999;
+            raz.LifeSpan=99999;
+        }
+    }
+}
+
+function StopInfiniteRazors()
+{
+    local Razor2 raz;
+
+    foreach AllActors(class'Razor2',raz){
+        if (raz.NumWallHits<0 || raz.LifeSpan > 10.0){
+            raz.NumWallHits=0;
+            raz.LifeSpan=raz.Default.LifeSpan;
+        }
+    }
+}
+
+function int StartInfiniteRazorMode(string viewer, int duration)
+{
+    if (infiniteRazorTimer>0) {
+        return TempFail;
+    }
+    if (weaponSwapTimer > 0) {
+        return TempFail;
+    }
+    if (meleeTimer > 0) {
+        return TempFail;
+    }
+    if (forceWeaponTimer>0) {
+        if (forcedWeapon!=class'ripper'){
+            return TempFail;
+        }
+    }    
+
+
+    Broadcast(viewer@"let the razors bounce forever!");
+
+    StartInfiniteRazors();
+
+    if (duration==0){
+        duration = InfiniteRazorTimerDefault;
+    }
+    infiniteRazorTimer = duration;
+    return Success;
+
+}
+
+function int StartExplosiveCorpseMode(string viewer, int duration)
+{
+    if (explosiveCorpseTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"made all corpses explosive!");
+
+    if (duration==0){
+        duration = ExplosiveCorpseTimerDefault;
+    }
+    explosiveCorpseTimer = duration;
     return Success;
 }
 
@@ -2347,6 +2482,10 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return StartRedLightGreenLight(viewer,duration);
         case "random_weapon_swap": //For the duration of the effect, there is a random chance every second of switching weapons
             return StartWeaponSwapMode(viewer,duration);
+        case "infinite_razor": //For the duration of the effect, ripper blades bounce forever until they hit something
+            return StartInfiniteRazorMode(viewer,duration);
+        case "explosive_corpses": //For the duration of the effect, carcasses explode like a regular rocket
+            return StartExplosiveCorpseMode(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

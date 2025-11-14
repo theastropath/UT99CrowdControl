@@ -2349,6 +2349,9 @@ function StopInfiniteRazors()
 
 function int StartInfiniteRazorMode(string viewer, int duration)
 {
+    local bool hasRipper;
+    local Pawn p;
+
     if (infiniteRazorTimer>0) {
         return TempFail;
     }
@@ -2364,6 +2367,19 @@ function int StartInfiniteRazorMode(string viewer, int duration)
         }
     }    
 
+    //Check to see if at least one player has a ripper
+    hasRipper=false;
+    foreach AllActors(class'Pawn',p) {
+        if (p.IsA('StationaryPawn')){
+            continue;
+        }
+        if (p.FindInventoryType(class'Ripper')!=None){
+            hasRipper=true;
+        }
+    }
+    if (hasRipper==false){
+        return TempFail;
+    }
 
     Broadcast(viewer@"let the razors bounce forever!");
 

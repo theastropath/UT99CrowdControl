@@ -80,6 +80,9 @@ const InfiniteRazorTimerDefault = 60;
 var int explosiveCorpseTimer;
 const explosiveCorpseTimerDefault = 60;
 
+var int slimeCorpseTimer;
+const slimeCorpseTimerDefault = 60;
+
 struct ZoneFriction
 {
     var name zonename;
@@ -109,7 +112,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,slimeCorpseTimer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -248,6 +251,10 @@ simulated function GetEffectList(out string effects[25], out int numEffects)
     }
     if (explosiveCorpseTimer > 0) {
         effects[i]="Explosive Corpses: "$explosiveCorpseTimer;
+        i++;
+    }
+    if (slimeCorpseTimer > 0) {
+        effects[i]="Slime Filled: "$slimeCorpseTimer;
         i++;
     }
     if (numAddedBots > 0) {
@@ -431,6 +438,13 @@ function PeriodicUpdates()
         }
     }
 
+    if (slimeCorpseTimer > 0) {
+        slimeCorpseTimer--;
+        if (slimeCorpseTimer <= 0) {
+            Broadcast("The slime leaves all bodies...");
+        }
+    }
+
 }
 
 //Updates every tenth of a second
@@ -456,6 +470,10 @@ function ContinuousUpdates()
 
     if (explosiveCorpseTimer > 0) {
         CheckExplodingCorpses();
+    }
+
+    if (slimeCorpseTimer > 0) {
+        CheckSlimeCorpses();
     }
 
     if (game!=None){
@@ -484,6 +502,28 @@ function CheckExplodingCorpses()
         carc.MakeNoise(1.0);
 
         carc.ChunkUp(200); //Gibbing takes time, but sets the carcass to hidden
+    }
+}
+
+function CheckSlimeCorpses()
+{
+    local carcass carc;
+    local BioGlob glob;
+    local Rotator momRot;
+    //local int i;
+
+    foreach AllActors(class'carcass',carc){
+        if (carc.bHidden) continue; //gibbing carcasses are hidden
+        if (UTHumanCarcass(carc)==None) continue; //Only explode actual full carcasses
+
+        carc.ChunkUp(200); //Gibbing takes time, but sets the carcass to hidden
+
+        //Glob direction should be based on movement direction
+        momRot = Rotator(carc.Velocity);
+
+        glob = carc.spawn(class'BioGlob',carc.PlayerOwner.Owner,,carc.Location,momRot);
+        glob.Instigator=Pawn(carc.PlayerOwner.Owner);
+        glob.DrawScale=5.0; //Big boy (biggest biorifle charge is 4.1 I think?)
     }
 }
 
@@ -562,8 +602,10 @@ function ScoreKill(Pawn Killer,Pawn Other)
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, 
 						out Vector Momentum, name DamageType)
 {
-    local vector newHitLoc,newMomentum;
+    local vector newHitLoc,newMomentum,slimeLoc;
     local String origDamageString;
+    local int numSlimes,i;
+    local BioSplash goo;
     
     //Broadcast(InstigatedBy.PlayerReplicationInfo.PlayerName$" inflicted "$ActualDamage$" damage to "$Victim.PlayerReplicationInfo.PlayerName);
     
@@ -602,6 +644,16 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
         );
 
         Level.Game.SpecialDamageString = origDamageString;
+    }
+
+    if (slimeCorpseTimer > 0 && InstigatedBy!=None && Victim!=InstigatedBy && ActualDamage>0 && DamageType!='SpecialDamage') {
+        numSlimes = ActualDamage/25;
+        numSlimes = Max(i,1);
+        for (i=0;i<numSlimes;i++){
+            slimeLoc = Victim.Location + Victim.CollisionRadius * VRand(); 
+            goo = Victim.Spawn(class'BioSplash',Victim,,slimeLoc,Rotator(slimeLoc - Victim.Location));
+            goo.Instigator=Victim;
+        }
     }
 }
 
@@ -2399,12 +2451,35 @@ function int StartExplosiveCorpseMode(string viewer, int duration)
         return TempFail;
     }
 
+    if (slimeCorpseTimer>0) {
+        return TempFail;
+    }
+
     Broadcast(viewer@"made all corpses explosive!");
 
     if (duration==0){
         duration = ExplosiveCorpseTimerDefault;
     }
     explosiveCorpseTimer = duration;
+    return Success;
+}
+
+function int StartSlimeCorpseMode(string viewer, int duration)
+{
+    if (explosiveCorpseTimer>0) {
+        return TempFail;
+    }
+
+    if (slimeCorpseTimer>0) {
+        return TempFail;
+    }
+
+    Broadcast(viewer@"filled everybody with slime!");
+
+    if (duration==0){
+        duration = SlimeCorpseTimerDefault;
+    }
+    slimeCorpseTimer = duration;
     return Success;
 }
 
@@ -2502,6 +2577,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return StartInfiniteRazorMode(viewer,duration);
         case "explosive_corpses": //For the duration of the effect, carcasses explode like a regular rocket
             return StartExplosiveCorpseMode(viewer,duration);
+        case "slime_corpses": //For the duration of the effect, carcasses explode with slime (like alt-fire biorifle)
+            return StartSlimeCorpseMode(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

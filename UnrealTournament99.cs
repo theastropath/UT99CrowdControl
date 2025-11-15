@@ -67,6 +67,7 @@ public class UnrealTournament99 : SimpleTCPPack<SimpleTCPServerConnector>
         new("Bouncy Castle", "bouncy_castle"){Price = 3, Description = "Everyone gets periodically bounced up into the air!", Duration=60},
         new("Red Light, Green Light", "red_light_green_light"){Price = 10, Description = "The light randomly changes between Red and Green!  Move while the light is red and... KABOOM!", Duration=60},
         new("Explosive Corpses", "explosive_corpses"){Price = 5, Description = "Players explode when they die!", Duration=60},
+        new("Slime-Filled Bodies", "slime_corpses"){Price = 5, Description = "Players spurt toxic goo when they take damage and when they die!", Duration=60},
 
 
         ////////////////////////////////////////////////////////////////

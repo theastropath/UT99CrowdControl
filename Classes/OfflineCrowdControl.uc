@@ -689,6 +689,7 @@ defaultproperties
     effects(40)=(EffectName="random_weapon_swap",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
     effects(41)=(EffectName="explosive_corpses",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
     effects(42)=(EffectName="infinite_razor",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
+    effects(43)=(EffectName="slime_corpses",quantityMin=0,quantityMax=0,durationMin=15,durationMax=120,enabled=true)
     botNames(0)="Jim"
     botNames(1)="James"
     botNames(2)="Jeremy"

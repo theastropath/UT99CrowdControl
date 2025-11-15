@@ -83,6 +83,9 @@ const explosiveCorpseTimerDefault = 60;
 var int slimeCorpseTimer;
 const slimeCorpseTimerDefault = 60;
 
+var int healthRegenTimer;
+const HealthRegenTimerDefault = 60;
+
 struct ZoneFriction
 {
     var name zonename;
@@ -112,7 +115,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,slimeCorpseTimer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,slimeCorpseTimer,healthRegenTimer,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -255,6 +258,10 @@ simulated function GetEffectList(out string effects[25], out int numEffects)
     }
     if (slimeCorpseTimer > 0) {
         effects[i]="Slime Filled: "$slimeCorpseTimer;
+        i++;
+    }
+    if (healthRegenTimer > 0) {
+        effects[i]="Health Regen: "$healthRegenTimer;
         i++;
     }
     if (numAddedBots > 0) {
@@ -445,6 +452,15 @@ function PeriodicUpdates()
         }
     }
 
+    if (healthRegenTimer > 0){
+        healthRegenTimer--;
+        if (healthRegenTimer <= 0) {
+            Broadcast("Health regeneration ends...");
+        } else {
+            DoHealthRegen();
+        }
+    }
+
 }
 
 //Updates every tenth of a second
@@ -481,6 +497,17 @@ function ContinuousUpdates()
             game.MinPlayers = cfgMinPlayers;
         } else {
             game.MinPlayers = Max(cfgMinPlayers+numAddedBots, game.NumPlayers + numAddedBots);
+        }
+    }
+}
+
+function DoHealthRegen()
+{
+    local Pawn p;
+    
+    foreach AllActors(class'Pawn',p) {
+        if (!p.IsA('StationaryPawn') && p.Health>0){
+            p.Health = Min(p.Health + 5,199); //Let's allow this to overheal, up to 199
         }
     }
 }
@@ -2071,6 +2098,11 @@ function int StartVampireMode(string viewer, int duration)
     if (thornsTimer>0) {
         return TempFail;
     }
+
+    if (healthRegenTimer > 0){
+        return TempFail;
+    }
+
     Broadcast(viewer@"made everyone have a taste for blood!");
     if (duration==0){
         duration = VampireTimerDefault;
@@ -2486,6 +2518,26 @@ function int StartSlimeCorpseMode(string viewer, int duration)
     return Success;
 }
 
+function int StartHealthRegen(string viewer, int duration)
+{
+    if (healthRegenTimer > 0){
+        return TempFail;
+    }
+
+    if (vampireTimer > 0){
+        return TempFail;
+    }
+
+    Broadcast(viewer@"made all players regenerate health!");
+
+    if (duration==0){
+        duration = HealthRegenTimerDefault;
+    }
+    healthRegenTimer = duration;
+    return Success;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////                                  CROWD CONTROL EFFECT MAPPING                                       ////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2582,6 +2634,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return StartExplosiveCorpseMode(viewer,duration);
         case "slime_corpses": //For the duration of the effect, carcasses explode with slime (like alt-fire biorifle)
             return StartSlimeCorpseMode(viewer,duration);
+        case "health_regen": //For the duration of the effect, all players regenerate 5 health per second
+            return StartHealthRegen(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

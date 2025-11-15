@@ -647,8 +647,11 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
     }
 
     if (slimeCorpseTimer > 0 && InstigatedBy!=None && Victim!=InstigatedBy && ActualDamage>0 && DamageType!='SpecialDamage') {
-        numSlimes = ActualDamage/25;
+        numSlimes = ActualDamage/15;
         numSlimes = Max(i,1);
+        if (DamageType=='Decapitated'){
+            numSlimes=numSlimes+3; //Bonus slime!
+        }
         for (i=0;i<numSlimes;i++){
             slimeLoc = Victim.Location + Victim.CollisionRadius * VRand(); 
             goo = Victim.Spawn(class'BioSplash',Victim,,slimeLoc,Rotator(slimeLoc - Victim.Location));

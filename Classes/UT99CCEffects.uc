@@ -13,6 +13,7 @@ const NormalFriction = 8;
 var vector NormalGravity;
 var vector FloatGrav;
 var vector MoonGrav;
+var vector JupiterGrav;
 
 
 var int behindTimer;
@@ -31,6 +32,13 @@ const IceTimerDefault = 60;
 
 var int gravityTimer;
 const GravityTimerDefault = 60;
+enum EGravityMode
+{
+    GM_Normal,
+    GM_Moon,
+    GM_Jupiter
+};
+var EGravityMode gravityMode;
 
 var int meleeTimer;
 const MeleeTimerDefault = 60;
@@ -115,7 +123,7 @@ var string targetPlayer;
 replication
 {
     reliable if ( Role == ROLE_Authority )
-        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,slimeCorpseTimer,healthRegenTimer,GetEffectList;
+        behindTimer,fatnessTimer,speedTimer,iceTimer,gravityTimer,meleeTimer,floodTimer,vampireTimer,thornsTimer,momentumTimer,jumpBootTimer,weaponSwapTimer,bounceTimer,forceWeaponTimer,bFat,bFast,forcedWeapon,numAddedBots,redLightTimer,greenLight,indLightTime,targetPlayer,infiniteRazorTimer,explosiveCorpseTimer,slimeCorpseTimer,healthRegenTimer,gravityMode,GetEffectList;
 }
 
 function Init(Mutator baseMut)
@@ -130,7 +138,10 @@ function Init(Mutator baseMut)
     NormalGravity=vect(0,0,-950);
     FloatGrav=vect(0,0,0.15);
     MoonGrav=vect(0,0,-100);  
+    JupiterGrav=vect(0,0,-2375); //2.5 times Earth
     BouncyCastleVelocity=vect(0,0,600);  
+
+    gravityMode = GM_Normal;
 
     for (i=0;i<MaxAddedBots;i++){
         added_bots[i]=None;
@@ -200,7 +211,11 @@ simulated function GetEffectList(out string effects[25], out int numEffects)
         i++;
     }
     if (gravityTimer > 0) {
-        effects[i]="Low-Grav: "$gravityTimer;
+        if (gravityMode==GM_Moon){
+            effects[i]="Low-Grav: "$gravityTimer;
+        } else if (gravityMode==GM_Jupiter){
+            effects[i]="Heavy-Grav: "$gravityTimer;
+        }
         i++;
     }
     if (meleeTimer > 0) {
@@ -315,6 +330,7 @@ function PeriodicUpdates()
         gravityTimer--;
         if (gravityTimer <= 0) {
             SetMoonPhysics(False);
+            gravityMode = GM_Normal;
             Broadcast("Gravity returns to normal...");
         }
     }  
@@ -1009,6 +1025,20 @@ function SetMoonPhysics(bool enabled) {
             Z.ZoneGravity = MoonGrav;
         }
         else if ( (!enabled) && Z.ZoneGravity == MoonGrav ) {
+            Z.ZoneGravity = GetDefaultZoneGravity(Z);
+        }
+    }
+}
+
+function SetJupiterPhysics(bool enabled) {
+    local ZoneInfo Z;
+    ForEach AllActors(class'ZoneInfo', Z)
+    {
+        if (enabled && Z.ZoneGravity != JupiterGrav ) {
+            SaveDefaultZoneGravity(Z);
+            Z.ZoneGravity = JupiterGrav;
+        }
+        else if ( (!enabled) && Z.ZoneGravity == JupiterGrav ) {
             Z.ZoneGravity = GetDefaultZoneGravity(Z);
         }
     }
@@ -1892,15 +1922,42 @@ function int EnableMoonPhysics(string viewer, int duration)
     if (gravityTimer>0) {
         return TempFail;
     }
+    if (gravityMode!=GM_Normal){
+        return TempFail;
+    }
+
     if (duration==0){
         duration = GravityTimerDefault;
     }
     Broadcast(viewer@"reduced gravity!");
     SetMoonPhysics(True);
+    gravityMode = GM_Moon;
     gravityTimer = duration;
 
     return Success;
 }
+
+function int EnableJupiterPhysics(string viewer, int duration)
+{
+    if (gravityTimer>0) {
+        return TempFail;
+    }
+    if (gravityMode!=GM_Normal){
+        return TempFail;
+    }
+
+    if (duration==0){
+        duration = GravityTimerDefault;
+    }
+    Broadcast(viewer@"greatly increased gravity!");
+    SetJupiterPhysics(True);
+    gravityMode = GM_Jupiter;
+    gravityTimer = duration;
+
+    return Success;
+}
+
+
 
 function int StartMeleeOnlyTime(String viewer, int duration)
 {
@@ -2636,6 +2693,8 @@ function int doCrowdControlEvent(string code, string param[5], string viewer, in
             return StartSlimeCorpseMode(viewer,duration);
         case "health_regen": //For the duration of the effect, all players regenerate 5 health per second
             return StartHealthRegen(viewer,duration);
+        case "jupiter_physics": //For the duration of the effect, gravity is extra strong
+            return EnableJupiterPhysics(viewer,duration);
         default:
             Broadcast("Got Crowd Control Effect -   code: "$code$"   viewer: "$viewer );
             break;

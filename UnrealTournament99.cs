@@ -67,6 +67,7 @@ public class UnrealTournament99 : SimpleTCPPack<SimpleTCPServerConnector>
         new("Nudge All Players", "nudge"){ Category = "Movement & Camera", Price = 5, Description = "Push the players around!"},
         new("Ice Physics", "ice_physics"){ Category = "Movement & Camera", Price = 10, Description = "Summon frosty floors!", Duration=60},
         new("Low Gravity", "low_grav"){ Category = "Movement & Camera", Price = 5, Description = "Low gravity means players jump higher!", Duration=60},
+        new("Extreme Gravity", "jupiter_physics"){ Category = "Movement & Camera", Price = 5, Description = "Gravity becomes much stronger, so players can't jump as high and take fall damage from lower heights!", Duration=60},
         new("Flood the Arena", "flood"){ Category = "Movement & Camera", Price = 10, Description = "Flood the arena!", Duration=20},
         new("Slow First Place Player", "first_place_slow"){ Category = "Movement & Camera", Price = 5, Description = "The first place player is too good, let's punish them!", Duration=45},
         new("Jump Boot Madness", "jump_boot_madness"){ Category = "Movement & Camera", Price = 3, Description = "Give all players jump boots and keep them topped up so they can jump really high!", Duration=60},

@@ -329,7 +329,11 @@ function PeriodicUpdates()
     if (gravityTimer > 0) {
         gravityTimer--;
         if (gravityTimer <= 0) {
-            SetMoonPhysics(False);
+            if (gravityMode==GM_Moon){
+                SetMoonPhysics(False);
+            } else {
+                SetJupiterPhysics(False);
+            }
             gravityMode = GM_Normal;
             Broadcast("Gravity returns to normal...");
         }
